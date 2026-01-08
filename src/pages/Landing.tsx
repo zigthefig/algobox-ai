@@ -66,7 +66,7 @@ export default function Landing() {
               <Button variant="ghost">Dashboard</Button>
             </Link>
             <Link to="/dashboard">
-              <Button variant="hero">
+              <Button>
                 Get Started
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
@@ -95,7 +95,7 @@ export default function Landing() {
             
             <h1 className="mb-6 text-5xl font-bold leading-tight tracking-tight md:text-7xl">
               Master Algorithms with
-              <span className="block text-gradient">AI-Guided Precision</span>
+              <span className="block text-primary">AI-Guided Precision</span>
             </h1>
             
             <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground md:text-xl">
@@ -105,7 +105,7 @@ export default function Landing() {
 
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Link to="/dashboard">
-                <Button variant="hero" size="xl">
+                <Button size="xl">
                   Start Your Journey
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -198,7 +198,7 @@ export default function Landing() {
                 Join thousands of developers who are using Algobox to master algorithms and land their dream jobs.
               </p>
               <Link to="/dashboard">
-                <Button variant="hero" size="xl">
+                <Button size="xl">
                   Start Learning Now
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>

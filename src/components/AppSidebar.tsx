@@ -91,7 +91,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
             <p className="mt-1 text-xs text-muted-foreground">
               Get help with your current problem
             </p>
-            <Button variant="glow" size="sm" className="mt-3 w-full">
+            <Button variant="default" size="sm" className="mt-3 w-full">
               Ask AI
             </Button>
           </div>

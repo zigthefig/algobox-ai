@@ -29,21 +29,6 @@ export function Logo({ className, showText = true, size = "md" }: LogoProps) {
           xmlns="http://www.w3.org/2000/svg"
           className="h-full w-full"
         >
-          {/* Background glow */}
-          <defs>
-            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="hsl(185 100% 50%)" />
-              <stop offset="100%" stopColor="hsl(199 89% 48%)" />
-            </linearGradient>
-            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="1" result="coloredBlur" />
-              <feMerge>
-                <feMergeNode in="coloredBlur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          
           {/* Outer box */}
           <rect
             x="2"
@@ -51,36 +36,35 @@ export function Logo({ className, showText = true, size = "md" }: LogoProps) {
             width="28"
             height="28"
             rx="6"
-            stroke="url(#logoGradient)"
+            stroke="hsl(217 91% 60%)"
             strokeWidth="2"
             fill="none"
-            filter="url(#glow)"
           />
           
           {/* Code brackets */}
           <path
             d="M12 10L8 16L12 22"
-            stroke="url(#logoGradient)"
+            stroke="hsl(217 91% 60%)"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
           <path
             d="M20 10L24 16L20 22"
-            stroke="url(#logoGradient)"
+            stroke="hsl(217 91% 60%)"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
           
           {/* Center dot */}
-          <circle cx="16" cy="16" r="2" fill="url(#logoGradient)" />
+          <circle cx="16" cy="16" r="2" fill="hsl(217 91% 60%)" />
         </svg>
       </div>
       
       {showText && (
         <span className={cn(
-          "font-bold tracking-tight text-gradient",
+          "font-bold tracking-tight text-foreground",
           textSizeClasses[size]
         )}>
           Algobox

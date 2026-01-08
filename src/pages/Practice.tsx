@@ -230,7 +230,7 @@ export default function Practice() {
                 <p className="mt-2 text-sm text-muted-foreground">
                   Get personalized help with your code. The AI will analyze your solution and provide targeted feedback.
                 </p>
-                <Button variant="glow" className="mt-4" onClick={handleAskAI}>
+                <Button className="mt-4" onClick={handleAskAI}>
                   <MessageSquare className="mr-2 h-4 w-4" />
                   Explain My Mistake
                 </Button>
@@ -332,7 +332,7 @@ export default function Practice() {
                 <RotateCcw className="mr-1 h-4 w-4" />
                 Reset
               </Button>
-              <Button variant="hero" size="sm" onClick={handleRun} disabled={isRunning}>
+              <Button size="sm" onClick={handleRun} disabled={isRunning}>
                 {isRunning ? (
                   <>
                     <Clock className="mr-1 h-4 w-4 animate-spin" />

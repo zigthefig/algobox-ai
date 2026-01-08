@@ -205,7 +205,7 @@ export default function Dashboard() {
                 AI will select the best problem for you based on your progress.
               </p>
               <Link to="/practice">
-                <Button variant="hero" className="w-full">
+                <Button className="w-full">
                   Start Now
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>

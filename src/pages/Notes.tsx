@@ -102,7 +102,7 @@ export default function Notes() {
         animate={{ opacity: 1, x: 0 }}
         className="w-56 border-r border-border p-4"
       >
-        <Button variant="hero" className="w-full mb-4">
+        <Button className="w-full mb-4">
           <Plus className="mr-2 h-4 w-4" />
           New Note
         </Button>

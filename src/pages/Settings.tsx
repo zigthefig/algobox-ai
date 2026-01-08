@@ -102,7 +102,7 @@ export default function Settings() {
                 <Input id="username" defaultValue="johndoe" />
               </div>
 
-              <Button variant="hero">Save Changes</Button>
+              <Button>Save Changes</Button>
             </div>
           </div>
         )}
