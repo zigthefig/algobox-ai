@@ -144,6 +144,20 @@ const roadmapData: RoadmapNode[] = [
         difficulty: "intermediate",
         estimatedTime: "1 week",
         skills: ["QuickSort", "MergeSort", "HeapSort"],
+        children: [
+          {
+            id: "quick-sort",
+            title: "Quick Sort",
+            description: "Fast divide-and-conquer sorting",
+            status: "locked",
+            progress: 0,
+            difficulty: "intermediate",
+            estimatedTime: "2 days",
+            skills: ["Partitioning", "Recursion"],
+            type: "visual-algorithm",
+            algorithmId: "quick-sort",
+          },
+        ],
       },
       {
         id: "binary-search",
@@ -339,7 +353,7 @@ function RoadmapNodeCard({ node, isExpanded, onToggle, delay = 0, isChild = fals
           </div>
           
           {node.status !== "locked" && !node.children && (
-            <Link to="/practice">
+            <Link to={node.type === "visual-algorithm" ? `/visualise/${node.algorithmId}` : "/practice"}>
               <Button variant="outline" size="sm">
                 {node.status === "completed" ? "Review" : "Continue"}
               </Button>

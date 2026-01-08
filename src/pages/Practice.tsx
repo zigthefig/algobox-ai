@@ -4,6 +4,9 @@ import Editor from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useNavigate } from "react-router-dom";
 import {
   Play,
   RotateCcw,
@@ -81,6 +84,8 @@ const testCases = [
 type Language = "python" | "javascript" | "cpp";
 
 export default function Practice() {
+  const navigate = useNavigate();
+  const navigate = useNavigate();
   const [language, setLanguage] = useState<Language>("python");
   const [code, setCode] = useState(currentProblem.starterCode[language]);
   const [isRunning, setIsRunning] = useState(false);
@@ -89,10 +94,17 @@ export default function Practice() {
   const [showHints, setShowHints] = useState<number[]>([]);
   const [testResults, setTestResults] = useState(testCases);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>("");
 
   const handleLanguageChange = (newLang: Language) => {
     setLanguage(newLang);
     setCode(currentProblem.starterCode[newLang]);
+  };
+
+  const handleVisualize = () => {
+    if (selectedAlgorithm) {
+      navigate(`/visualise/${selectedAlgorithm}`);
+    }
   };
 
   const handleRun = () => {
@@ -129,7 +141,7 @@ export default function Practice() {
       <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="flex w-[45%] flex-col border-r border-border"
+        className="flex w-[35%] flex-col border-r border-border"
       >
         {/* Problem Header */}
         <div className="flex items-center justify-between border-b border-border p-4">
@@ -252,13 +264,14 @@ export default function Practice() {
         </Tabs>
       </motion.div>
 
-      {/* Right Panel - Code Editor */}
-      <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="flex flex-1 flex-col"
-      >
-        {/* Editor Header */}
+      {/* Right Panel - Code Editor and Sidebar */}
+      <div className="flex flex-1">
+        {/* Code Editor */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex flex-1 flex-col border-r border-border"
+        >
         <div className="flex items-center justify-between border-b border-border p-2">
           <div className="flex items-center gap-2">
             {(["python", "javascript", "cpp"] as Language[]).map((lang) => (
@@ -360,6 +373,46 @@ export default function Practice() {
           </div>
         </div>
       </motion.div>
+
+      {/* Algorithm Selection Sidebar */}
+      <div className="w-80 flex flex-col border-l border-border bg-card">
+        <div className="p-4 border-b border-border">
+          <h3 className="font-semibold text-lg">Algorithm Visualization</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Select an algorithm to visualize its execution step by step.
+          </p>
+        </div>
+        <div className="p-4 space-y-4">
+          <div>
+            <label className="text-sm font-medium mb-2 block">Choose Algorithm</label>
+            <Select value={selectedAlgorithm} onValueChange={setSelectedAlgorithm}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select an algorithm" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="bubble-sort">Bubble Sort</SelectItem>
+                <SelectItem value="quick-sort">Quick Sort</SelectItem>
+                <SelectItem value="merge-sort">Merge Sort</SelectItem>
+                <SelectItem value="binary-search">Binary Search</SelectItem>
+                <SelectItem value="a-star">A* Pathfinding</SelectItem>
+                <SelectItem value="dijkstra">Dijkstra's Algorithm</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button 
+            onClick={handleVisualize} 
+            disabled={!selectedAlgorithm}
+            className="w-full"
+          >
+            <Sparkles className="mr-2 h-4 w-4" />
+            Visualize Algorithm
+          </Button>
+          <div className="text-xs text-muted-foreground">
+            This will open the algorithm visualization in a new page with interactive controls.
+          </div>
+        </div>
+      </div>
+      </div>
     </div>
   );
 }

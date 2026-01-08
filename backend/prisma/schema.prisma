@@ -30,7 +30,7 @@ model RoadmapNode {
   progress    Int      @default(0)
   difficulty  String   // "beginner" | "intermediate" | "advanced"
   estimatedTime String?
-  skills      String[] // JSON array
+  skills      String   // JSON string of skills array
   type        String?  // "visual-algorithm" for visualization nodes
   algorithmId String?
   parentId    String?
@@ -44,11 +44,11 @@ model RoadmapNode {
 
 model AlgoRun {
   id         String   @id @default(cuid())
-  userId     String
+  userId     String?
   algorithmId String
   steps      String   // JSON string of AlgoStep[]
   completed  Boolean  @default(false)
   createdAt  DateTime @default(now())
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

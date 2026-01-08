@@ -4,7 +4,11 @@ const router = express.Router();
 
 // Import step generators
 const { generateQuickSortSteps } = require('../lib/algorithms/quickSort');
+const { generateBubbleSortSteps } = require('../lib/algorithms/bubbleSort');
+const { generateMergeSortSteps } = require('../lib/algorithms/mergeSort');
 const { generateAStarSteps } = require('../lib/algorithms/aStar');
+const { generateDijkstraSteps } = require('../lib/algorithms/dijkstra');
+const { generateBinarySearchSteps } = require('../lib/algorithms/binarySearch');
 
 // POST /api/visualise/run
 router.post('/run', async (req, res) => {
@@ -20,7 +24,7 @@ router.post('/run', async (req, res) => {
     const inputHash = crypto.createHash('md5').update(JSON.stringify({ algorithm, input })).digest('hex');
 
     // Check cache
-    const cached = await req.redis.get(`algo:${inputHash}`);
+    const cached = await req.cache.get(`algo:${inputHash}`);
     if (cached) {
       const run = JSON.parse(cached);
       return res.json(run);
@@ -32,8 +36,20 @@ router.post('/run', async (req, res) => {
       case 'quick-sort':
         steps = generateQuickSortSteps(input.array);
         break;
+      case 'bubble-sort':
+        steps = generateBubbleSortSteps(input.array);
+        break;
+      case 'merge-sort':
+        steps = generateMergeSortSteps(input.array);
+        break;
+      case 'binary-search':
+        steps = generateBinarySearchSteps(input.array, input.target);
+        break;
       case 'a-star':
         steps = generateAStarSteps(input.grid, input.start, input.end);
+        break;
+      case 'dijkstra':
+        steps = generateDijkstraSteps(input.graph, input.start);
         break;
       default:
         return res.status(400).json({ error: 'Unsupported algorithm' });
@@ -45,12 +61,12 @@ router.post('/run', async (req, res) => {
         algorithmId: algorithm,
         steps: JSON.stringify(steps),
         completed: true,
-        userId: req.body.userId || 'anonymous', // TODO: get from auth
+        // userId: req.body.userId || 'anonymous', // TODO: get from auth
       },
     });
 
     // Cache the result
-    await req.redis.setex(`algo:${inputHash}`, 3600, JSON.stringify(run)); // 1 hour
+    await req.cache.set(`algo:${inputHash}`, JSON.stringify(run)); // No TTL for in-memory
 
     res.json(run);
   } catch (error) {
