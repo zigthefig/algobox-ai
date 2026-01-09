@@ -13,9 +13,9 @@ serve(async (req) => {
   try {
     const { algorithm, step, stepType, description, code } = await req.json();
     
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
     const systemPrompt = `You are an expert algorithm teacher. Your job is to explain algorithm steps in a clear, educational way.
@@ -35,21 +35,33 @@ ${code ? `\nRelevant Code:\n${code}` : ''}
 
 Provide a clear, beginner-friendly explanation of what's happening and why.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        max_tokens: 300,
-      }),
-    });
+    const response = await fetch(
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: systemPrompt + "\n\n" + userPrompt }
+          ]
+        }
+      ],
+      generationConfig: {
+        maxOutputTokens: 300,
+        temperature: 0.7
+      }
+    })
+  }
+);
+
+const data = await response.json();
+console.log(data.candidates[0].content.parts[0].text);
+
 
     if (!response.ok) {
       if (response.status === 429) {
