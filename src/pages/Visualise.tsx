@@ -18,9 +18,12 @@ import {
   SkipBack, 
   SkipForward,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Sparkles,
+  Loader2
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { useAIExplanation } from "@/hooks/useAIExplanation";
 
 type Algorithm = 
   | "bubble-sort" 
@@ -627,6 +630,23 @@ export default function Visualise() {
   const isSearchAlgo = algorithm === "binary-search";
   const isGraphAlgo = ["dijkstra", "a-star"].includes(algorithm);
 
+  const { isLoading: aiLoading, explanation: aiExplanation, explainStep, clearExplanation } = useAIExplanation();
+
+  const handleExplainStep = async () => {
+    if (!currentStepData) return;
+    
+    await explainStep({
+      algorithm: ALGORITHMS.find(a => a.id === algorithm)?.name || algorithm,
+      step: currentStep,
+      stepType: currentStepData.type,
+      description: currentStepData.description,
+    });
+  };
+
+  useEffect(() => {
+    clearExplanation();
+  }, [currentStep, algorithm, clearExplanation]);
+
   return (
     <div className="flex flex-col h-full p-6 gap-6">
       {/* Header */}
@@ -777,8 +797,43 @@ export default function Visualise() {
 
             {/* Step Description */}
             {currentStepData && (
-              <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+              <div className="mt-4 p-4 bg-muted/50 rounded-lg space-y-3">
                 <p className="text-sm text-foreground">{currentStepData.description}</p>
+                
+                {/* AI Explanation */}
+                <div className="border-t border-border pt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                      <Sparkles className="h-4 w-4" />
+                      AI Explanation
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleExplainStep}
+                      disabled={aiLoading}
+                    >
+                      {aiLoading ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          Thinking...
+                        </>
+                      ) : (
+                        "Explain This Step"
+                      )}
+                    </Button>
+                  </div>
+                  {aiExplanation && (
+                    <div className="text-sm text-muted-foreground bg-background/50 rounded-md p-3">
+                      {aiExplanation}
+                    </div>
+                  )}
+                  {!aiExplanation && !aiLoading && (
+                    <p className="text-xs text-muted-foreground">
+                      Click "Explain This Step" for an AI-powered explanation
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </CardContent>
