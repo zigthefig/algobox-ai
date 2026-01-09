@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import Editor from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
@@ -115,10 +116,29 @@ export default function Practice() {
       // Prepare tests in the format expected by the server
       const testsPayload = testResults.map((t) => ({ input: t.input, expected: t.expected }));
 
-      // Call the Supabase function which will run Judge0 and the AI analysis
-      // Note: supabase client may be a stub if not configured; handle accordingly
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { supabase } = require("@/integrations/supabase/client");
+      // Dynamically import the Supabase client at runtime to avoid synchronous require errors in the browser preview
+      let supabase: any;
+      try {
+        const mod = await import("@/integrations/supabase/client");
+        supabase = (mod as any).supabase;
+      } catch (err) {
+        console.error("Failed to import supabase client:", err);
+        setOutput("Supabase client not available in this environment.");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((err as any)?.message) {
+          setOutput((prev) => `${prev}\n\n${(err as any).message}`);
+        }
+        toast.error("Supabase client not available");
+        return;
+      }
+
+      if (!supabase || typeof supabase.functions?.invoke !== "function") {
+        const msg = 'Supabase functions are not available. Ensure VITE_SUPABASE_URL is set and functions are deployed.';
+        console.warn(msg);
+        setOutput(msg);
+        toast.error("Supabase not configured");
+        return;
+      }
 
       try {
         const { data, error } = await supabase.functions.invoke("debug-code", {
