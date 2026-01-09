@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  PlayCircle,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -25,6 +26,7 @@ const navItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
   { label: "Roadmap", href: "/roadmap", icon: <Map className="h-5 w-5" /> },
   { label: "Practice", href: "/practice", icon: <Code2 className="h-5 w-5" /> },
+  { label: "Visualize", href: "/visualise", icon: <PlayCircle className="h-5 w-5" /> },
   { label: "Analytics", href: "/analytics", icon: <BarChart3 className="h-5 w-5" /> },
   { label: "Notes", href: "/notes", icon: <FileText className="h-5 w-5" /> },
 ];

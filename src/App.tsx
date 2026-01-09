@@ -12,7 +12,6 @@ import Notes from "./pages/Notes";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Visualise from "./pages/Visualise";
-import VisualiseRun from "./pages/VisualiseRun";
 import { DashboardLayout } from "./components/DashboardLayout";
 
 const queryClient = new QueryClient();
@@ -29,12 +28,11 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/roadmap" element={<Roadmap />} />
             <Route path="/practice" element={<Practice />} />
+            <Route path="/visualise" element={<Visualise />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/notes" element={<Notes />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
-          <Route path="/visualise/:algorithm" element={<Visualise />} />
-          <Route path="/visualise/:algorithm/run/:id" element={<VisualiseRun />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
