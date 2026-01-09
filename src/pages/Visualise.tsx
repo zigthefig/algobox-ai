@@ -24,6 +24,10 @@ import {
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { useAIExplanation } from "@/hooks/useAIExplanation";
+import { D3SortingVisualization } from "@/components/visualisation/D3SortingVisualization";
+import { D3BinarySearchVisualization } from "@/components/visualisation/D3BinarySearchVisualization";
+import { D3GraphVisualization } from "@/components/visualisation/D3GraphVisualization";
+import { D3GridVisualization } from "@/components/visualisation/D3GridVisualization";
 
 type Algorithm = 
   | "bubble-sort" 
@@ -773,25 +777,25 @@ export default function Visualise() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="relative w-full h-[400px] bg-muted/30 rounded-lg overflow-hidden">
+            <div className="relative w-full h-[500px] rounded-lg overflow-hidden bg-[#0f172a]">
               {/* Sorting Visualization */}
               {isSortingAlgo && currentStepData && (
-                <SortingVisualization step={currentStepData} algorithm={algorithm} />
+                <D3SortingVisualization step={currentStepData} algorithm={algorithm} />
               )}
 
               {/* Binary Search Visualization */}
               {isSearchAlgo && currentStepData && (
-                <BinarySearchVisualization step={currentStepData} />
+                <D3BinarySearchVisualization step={currentStepData} />
               )}
 
               {/* Dijkstra Visualization */}
               {algorithm === "dijkstra" && currentStepData && (
-                <DijkstraVisualization step={currentStepData} />
+                <D3GraphVisualization step={currentStepData} />
               )}
 
               {/* A* Visualization */}
               {algorithm === "a-star" && currentStepData && (
-                <AStarVisualization step={currentStepData} />
+                <D3GridVisualization step={currentStepData} />
               )}
             </div>
 
