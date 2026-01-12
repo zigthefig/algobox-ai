@@ -7,7 +7,7 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 // If the URL is missing, provide a safe stub that fails when used but doesn't crash on import.
 // We assign to a top-level `supabase` variable and export it once to avoid block-scoped `export` issues.
-let supabase: ReturnType<typeof createClient>;
+let supabase: ReturnType<typeof createClient<Database>>;
 
 if (!SUPABASE_URL) {
   console.warn(

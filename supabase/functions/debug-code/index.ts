@@ -26,7 +26,17 @@ serve(async (req) => {
     const JUDGE0_API_HOST = Deno.env.get("JUDGE0_API_HOST"); // Optional: for RapidAPI
 
     async function judge0Fetch(path: string, init?: RequestInit) {
-      const headers = Object.assign({}, init?.headers || {});
+      const headers: Record<string, string> = {};
+      const initHeaders = init?.headers;
+      if (initHeaders) {
+        if (initHeaders instanceof Headers) {
+          initHeaders.forEach((value, key) => { headers[key] = value; });
+        } else if (Array.isArray(initHeaders)) {
+          initHeaders.forEach(([key, value]) => { headers[key] = value; });
+        } else {
+          Object.assign(headers, initHeaders);
+        }
+      }
 
       // Only add auth headers if a key is explicitly configured
       if (JUDGE0_API_KEY) {
