@@ -2,25 +2,26 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  Play, 
-  Pause, 
-  RotateCcw, 
-  SkipBack, 
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  SkipBack,
   SkipForward,
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  Loader2
+  Loader2,
+  Database
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { useAIExplanation } from "@/hooks/useAIExplanation";
@@ -28,13 +29,17 @@ import { D3SortingVisualization } from "@/components/visualisation/D3SortingVisu
 import { D3BinarySearchVisualization } from "@/components/visualisation/D3BinarySearchVisualization";
 import { D3GraphVisualization } from "@/components/visualisation/D3GraphVisualization";
 import { D3GridVisualization } from "@/components/visualisation/D3GridVisualization";
+import { SqlVisualizer } from "@/components/visualisation/SqlVisualizer";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
-type Algorithm = 
-  | "bubble-sort" 
-  | "quick-sort" 
-  | "merge-sort" 
-  | "binary-search" 
-  | "dijkstra" 
+type Algorithm =
+  | "bubble-sort"
+  | "quick-sort"
+  | "merge-sort"
+  | "binary-search"
+  | "dijkstra"
   | "a-star";
 
 interface AlgoStep {
@@ -53,7 +58,6 @@ const ALGORITHMS: { id: Algorithm; name: string; category: string }[] = [
   { id: "a-star", name: "A* Pathfinding", category: "Graph" },
 ];
 
-// Algorithm step generators
 function generateBubbleSortSteps(arr: number[]): AlgoStep[] {
   const steps: AlgoStep[] = [];
   const array = [...arr];
@@ -193,9 +197,9 @@ function generateMergeSortSteps(arr: number[]): AlgoStep[] {
     steps.push({
       index: steps.length,
       type: "divide",
-      state: { 
-        array: [...array], 
-        left: leftArr, 
+      state: {
+        array: [...array],
+        left: leftArr,
         right: rightArr,
         merging: [],
         range: [start, start + arr.length - 1]
@@ -225,10 +229,10 @@ function generateMergeSortSteps(arr: number[]): AlgoStep[] {
       steps.push({
         index: steps.length,
         type: "merge",
-        state: { 
-          array: [...array], 
-          left, 
-          right, 
+        state: {
+          array: [...array],
+          left,
+          right,
           merging: [...result],
           leftIdx: i - 1,
           rightIdx: j - 1
@@ -238,8 +242,7 @@ function generateMergeSortSteps(arr: number[]): AlgoStep[] {
     }
 
     const final = result.concat(left.slice(i)).concat(right.slice(j));
-    
-    // Update the main array
+
     for (let k = 0; k < final.length; k++) {
       array[start + k] = final[k];
     }
@@ -333,8 +336,7 @@ function generateBinarySearchSteps(arr: number[], target: number): AlgoStep[] {
 
 function generateDijkstraSteps(): AlgoStep[] {
   const steps: AlgoStep[] = [];
-  
-  // Simple 5-node graph
+
   const nodes = [
     { id: 0, x: 100, y: 150, label: "A" },
     { id: 1, x: 250, y: 50, label: "B" },
@@ -367,7 +369,6 @@ function generateDijkstraSteps(): AlgoStep[] {
   const unvisited = [0, 1, 2, 3, 4];
 
   while (unvisited.length > 0) {
-    // Find min distance unvisited node
     let minDist = Infinity;
     let current = -1;
     for (const node of unvisited) {
@@ -386,11 +387,9 @@ function generateDijkstraSteps(): AlgoStep[] {
       description: `Visiting node ${nodes[current].label} (distance: ${distances[current]})`,
     });
 
-    // Mark as visited
     visited.push(current);
     unvisited.splice(unvisited.indexOf(current), 1);
 
-    // Update neighbors
     for (const edge of edges) {
       let neighbor = -1;
       if (edge.from === current && !visited.includes(edge.to)) {
@@ -404,14 +403,14 @@ function generateDijkstraSteps(): AlgoStep[] {
         if (newDist < distances[neighbor]) {
           distances[neighbor] = newDist;
           previous[neighbor] = current;
-          
+
           steps.push({
             index: steps.length,
             type: "update",
-            state: { 
-              nodes, edges, 
-              distances: [...distances], 
-              visited: [...visited], 
+            state: {
+              nodes, edges,
+              distances: [...distances],
+              visited: [...visited],
               current,
               updating: neighbor,
               previous: [...previous]
@@ -435,13 +434,11 @@ function generateDijkstraSteps(): AlgoStep[] {
 
 function generateAStarSteps(): AlgoStep[] {
   const steps: AlgoStep[] = [];
-  
-  // 8x6 grid
+
   const rows = 6;
   const cols = 8;
   const grid: number[][] = Array(rows).fill(null).map(() => Array(cols).fill(0));
-  
-  // Add some walls
+
   grid[1][2] = 1;
   grid[2][2] = 1;
   grid[3][2] = 1;
@@ -456,7 +453,7 @@ function generateAStarSteps(): AlgoStep[] {
   const closedSet: { x: number; y: number }[] = [];
   const path: { x: number; y: number }[] = [];
 
-  const heuristic = (a: { x: number; y: number }, b: { x: number; y: number }) => 
+  const heuristic = (a: { x: number; y: number }, b: { x: number; y: number }) =>
     Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 
   openSet.push({ ...start, g: 0, h: heuristic(start, end), f: heuristic(start, end), parent: null });
@@ -469,25 +466,23 @@ function generateAStarSteps(): AlgoStep[] {
   });
 
   while (openSet.length > 0) {
-    // Find node with lowest f
     openSet.sort((a, b) => a.f - b.f);
     const current = openSet.shift()!;
 
     steps.push({
       index: steps.length,
       type: "visit",
-      state: { 
-        grid, start, end, 
-        openSet: openSet.map(n => ({ x: n.x, y: n.y })), 
-        closedSet: [...closedSet], 
-        path: [], 
-        current: { x: current.x, y: current.y } 
+      state: {
+        grid, start, end,
+        openSet: openSet.map(n => ({ x: n.x, y: n.y })),
+        closedSet: [...closedSet],
+        path: [],
+        current: { x: current.x, y: current.y }
       },
       description: `Exploring cell (${current.x}, ${current.y}) - f=${current.f.toFixed(1)}`,
     });
 
     if (current.x === end.x && current.y === end.y) {
-      // Reconstruct path
       let temp: any = current;
       while (temp) {
         path.unshift({ x: temp.x, y: temp.y });
@@ -505,7 +500,6 @@ function generateAStarSteps(): AlgoStep[] {
 
     closedSet.push({ x: current.x, y: current.y });
 
-    // Check neighbors
     const neighbors = [
       { x: current.x + 1, y: current.y },
       { x: current.x - 1, y: current.y },
@@ -530,15 +524,15 @@ function generateAStarSteps(): AlgoStep[] {
       const existing = openSet.find(n => n.x === neighbor.x && n.y === neighbor.y);
       if (!existing) {
         openSet.push({ ...neighbor, g, h, f, parent: current });
-        
+
         steps.push({
           index: steps.length,
           type: "add-open",
-          state: { 
-            grid, start, end, 
-            openSet: openSet.map(n => ({ x: n.x, y: n.y })), 
-            closedSet: [...closedSet], 
-            path: [], 
+          state: {
+            grid, start, end,
+            openSet: openSet.map(n => ({ x: n.x, y: n.y })),
+            closedSet: [...closedSet],
+            path: [],
             current: { x: current.x, y: current.y },
             adding: neighbor
           },
@@ -563,6 +557,7 @@ function generateAStarSteps(): AlgoStep[] {
 }
 
 export default function Visualise() {
+  const [activeTab, setActiveTab] = useState("algorithms");
   const [algorithm, setAlgorithm] = useState<Algorithm>("bubble-sort");
   const [steps, setSteps] = useState<AlgoStep[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
@@ -571,9 +566,14 @@ export default function Visualise() {
   const [inputArray, setInputArray] = useState("64, 34, 25, 12, 22, 11, 90");
   const [searchTarget, setSearchTarget] = useState("25");
 
+  // SQL State
+  const [sqlQuery, setSqlQuery] = useState("SELECT * FROM users WHERE active = true;");
+  const [sqlData, setSqlData] = useState<any[] | null>(null);
+  const [isSqlLoading, setIsSqlLoading] = useState(false);
+
   const generateSteps = useCallback(() => {
     const arr = inputArray.split(",").map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-    
+
     let newSteps: AlgoStep[] = [];
     switch (algorithm) {
       case "bubble-sort":
@@ -595,7 +595,7 @@ export default function Visualise() {
         newSteps = generateAStarSteps();
         break;
     }
-    
+
     setSteps(newSteps);
     setCurrentStep(0);
     setIsPlaying(false);
@@ -632,13 +632,12 @@ export default function Visualise() {
   const currentStepData = steps[currentStep];
   const isSortingAlgo = ["bubble-sort", "quick-sort", "merge-sort"].includes(algorithm);
   const isSearchAlgo = algorithm === "binary-search";
-  const isGraphAlgo = ["dijkstra", "a-star"].includes(algorithm);
 
   const { isLoading: aiLoading, explanation: aiExplanation, explainStep, clearExplanation } = useAIExplanation();
 
   const handleExplainStep = async () => {
     if (!currentStepData) return;
-    
+
     await explainStep({
       algorithm: ALGORITHMS.find(a => a.id === algorithm)?.name || algorithm,
       step: currentStep,
@@ -647,412 +646,259 @@ export default function Visualise() {
     });
   };
 
+  const handleRunSqlQuery = async () => {
+    setIsSqlLoading(true);
+    setSqlData(null);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data, error } = await supabase.functions.invoke("debug-code", {
+        body: { code: sqlQuery, language: "sql", visualize: true },
+      });
+
+      if (error) throw error;
+
+      if (data?.visualization?.data) {
+        setSqlData(data.visualization.data);
+        toast.success("Query executed successfully");
+      } else {
+        setSqlData([]);
+        toast.info("No data returned");
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error(`Error executing query: ${e.message}`);
+    } finally {
+      setIsSqlLoading(false);
+    }
+  };
+
   useEffect(() => {
     clearExplanation();
   }, [currentStep, algorithm, clearExplanation]);
 
   return (
     <div className="flex flex-col h-full p-6 gap-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Algorithm Visualization</h1>
-          <p className="text-muted-foreground">Step through algorithms to understand how they work</p>
+          <h1 className="text-2xl font-bold text-foreground">Interactive Visualization</h1>
+          <p className="text-muted-foreground">Explore algorithms and data structures visually</p>
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Controls */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-lg">Configuration</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Algorithm Selection */}
-            <div className="space-y-2">
-              <Label>Algorithm</Label>
-              <Select value={algorithm} onValueChange={(v) => setAlgorithm(v as Algorithm)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select algorithm" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ALGORITHMS.map(algo => (
-                    <SelectItem key={algo.id} value={algo.id}>
-                      <div className="flex items-center gap-2">
-                        <span>{algo.name}</span>
-                        <Badge variant="outline" className="text-xs">{algo.category}</Badge>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+        <TabsList className="w-fit">
+          <TabsTrigger value="algorithms">Algorithms</TabsTrigger>
+          <TabsTrigger value="sql">SQL Playground</TabsTrigger>
+        </TabsList>
 
-            {/* Input for sorting/search algorithms */}
-            {(isSortingAlgo || isSearchAlgo) && (
-              <div className="space-y-2">
-                <Label>Input Array</Label>
-                <Input
-                  value={inputArray}
-                  onChange={(e) => setInputArray(e.target.value)}
-                  placeholder="Enter comma-separated numbers"
-                />
-              </div>
-            )}
+        <TabsContent value="algorithms" className="flex-1 mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+            <Card className="lg:col-span-1 h-fit">
+              <CardHeader>
+                <CardTitle className="text-lg">Configuration</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label>Algorithm</Label>
+                  <Select value={algorithm} onValueChange={(v) => setAlgorithm(v as Algorithm)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select algorithm" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ALGORITHMS.map(algo => (
+                        <SelectItem key={algo.id} value={algo.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{algo.name}</span>
+                            <Badge variant="outline" className="text-xs">{algo.category}</Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            {isSearchAlgo && (
-              <div className="space-y-2">
-                <Label>Search Target</Label>
-                <Input
-                  value={searchTarget}
-                  onChange={(e) => setSearchTarget(e.target.value)}
-                  placeholder="Enter target number"
-                />
-              </div>
-            )}
-
-            {/* Speed Control */}
-            <div className="space-y-2">
-              <Label>Speed: {speed}ms</Label>
-              <Slider
-                value={[speed]}
-                onValueChange={([v]) => setSpeed(v)}
-                min={100}
-                max={2000}
-                step={100}
-              />
-            </div>
-
-            {/* Generate Button */}
-            <Button onClick={generateSteps} className="w-full">
-              Generate Steps
-            </Button>
-
-            {/* Playback Controls */}
-            <div className="flex items-center justify-center gap-2">
-              <Button variant="outline" size="icon" onClick={handleStepBack} disabled={currentStep === 0}>
-                <SkipBack className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))} disabled={currentStep === 0}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button onClick={handlePlay} size="icon">
-                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              </Button>
-              <Button variant="outline" size="icon" onClick={handleStepForward} disabled={currentStep >= steps.length - 1}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" onClick={handleReset}>
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Step Slider */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Step {currentStep + 1}</span>
-                <span>of {steps.length}</span>
-              </div>
-              <Slider
-                value={[currentStep]}
-                onValueChange={([v]) => setCurrentStep(v)}
-                min={0}
-                max={Math.max(0, steps.length - 1)}
-                step={1}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Center: Visualization Canvas */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Visualization</CardTitle>
-              {currentStepData && (
-                <Badge variant={currentStepData.type === "done" ? "default" : "secondary"}>
-                  {currentStepData.type}
-                </Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="relative w-full h-[500px] rounded-lg overflow-hidden bg-[#0f172a]">
-              {/* Sorting Visualization */}
-              {isSortingAlgo && currentStepData && (
-                <D3SortingVisualization step={currentStepData} algorithm={algorithm} />
-              )}
-
-              {/* Binary Search Visualization */}
-              {isSearchAlgo && currentStepData && (
-                <D3BinarySearchVisualization step={currentStepData} />
-              )}
-
-              {/* Dijkstra Visualization */}
-              {algorithm === "dijkstra" && currentStepData && (
-                <D3GraphVisualization step={currentStepData} />
-              )}
-
-              {/* A* Visualization */}
-              {algorithm === "a-star" && currentStepData && (
-                <D3GridVisualization step={currentStepData} />
-              )}
-            </div>
-
-            {/* Step Description */}
-            {currentStepData && (
-              <div className="mt-4 p-4 bg-muted/50 rounded-lg space-y-3">
-                <p className="text-sm text-foreground">{currentStepData.description}</p>
-                
-                {/* AI Explanation */}
-                <div className="border-t border-border pt-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                      <Sparkles className="h-4 w-4" />
-                      AI Explanation
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={handleExplainStep}
-                      disabled={aiLoading}
-                    >
-                      {aiLoading ? (
-                        <>
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                          Thinking...
-                        </>
-                      ) : (
-                        "Explain This Step"
-                      )}
-                    </Button>
+                {(isSortingAlgo || isSearchAlgo) && (
+                  <div className="space-y-2">
+                    <Label>Input Array</Label>
+                    <Input
+                      value={inputArray}
+                      onChange={(e) => setInputArray(e.target.value)}
+                      placeholder="Enter comma-separated numbers"
+                    />
                   </div>
-                  {aiExplanation && (
-                    <div className="text-sm text-muted-foreground bg-background/50 rounded-md p-3">
-                      {aiExplanation}
-                    </div>
-                  )}
-                  {!aiExplanation && !aiLoading && (
-                    <p className="text-xs text-muted-foreground">
-                      Click "Explain This Step" for an AI-powered explanation
-                    </p>
+                )}
+
+                {isSearchAlgo && (
+                  <div className="space-y-2">
+                    <Label>Search Target</Label>
+                    <Input
+                      value={searchTarget}
+                      onChange={(e) => setSearchTarget(e.target.value)}
+                      placeholder="Enter target number"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label>Speed: {speed}ms</Label>
+                  <Slider
+                    value={[speed]}
+                    onValueChange={([v]) => setSpeed(v)}
+                    min={100}
+                    max={2000}
+                    step={100}
+                  />
+                </div>
+
+                <Button onClick={generateSteps} className="w-full">
+                  Generate Steps
+                </Button>
+
+                <div className="flex items-center justify-center gap-2">
+                  <Button variant="outline" size="icon" onClick={handleStepBack} disabled={currentStep === 0}>
+                    <SkipBack className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))} disabled={currentStep === 0}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={handlePlay} size="icon">
+                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={handleStepForward} disabled={currentStep >= steps.length - 1}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={handleReset}>
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Step {currentStep + 1}</span>
+                    <span>of {steps.length}</span>
+                  </div>
+                  <Slider
+                    value={[currentStep]}
+                    onValueChange={([v]) => setCurrentStep(v)}
+                    min={0}
+                    max={Math.max(0, steps.length - 1)}
+                    step={1}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2 flex flex-col">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">Visualization</CardTitle>
+                  {currentStepData && (
+                    <Badge variant={currentStepData.type === "done" ? "default" : "secondary"}>
+                      {currentStepData.type}
+                    </Badge>
                   )}
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col">
+                <div className="relative w-full h-[500px] rounded-lg overflow-hidden bg-[#0f172a]">
+                  {isSortingAlgo && currentStepData && (
+                    <D3SortingVisualization step={currentStepData} algorithm={algorithm} />
+                  )}
+                  {isSearchAlgo && currentStepData && (
+                    <D3BinarySearchVisualization step={currentStepData} />
+                  )}
+                  {algorithm === "dijkstra" && currentStepData && (
+                    <D3GraphVisualization step={currentStepData} />
+                  )}
+                  {algorithm === "a-star" && currentStepData && (
+                    <D3GridVisualization step={currentStepData} />
+                  )}
+                </div>
 
-// Visualization Components
-function SortingVisualization({ step, algorithm }: { step: AlgoStep; algorithm: string }) {
-  const { array, comparing = [], sorted = [], pivot, i, j, low, high } = step.state;
-  const maxVal = Math.max(...array);
+                {currentStepData && (
+                  <div className="mt-4 p-4 bg-muted/50 rounded-lg space-y-3">
+                    <p className="text-sm text-foreground">{currentStepData.description}</p>
 
-  return (
-    <div className="flex items-end justify-center gap-1 h-full p-8">
-      {array.map((value: number, index: number) => {
-        let bgColor = "bg-primary/60";
-        
-        if (sorted?.includes(index)) {
-          bgColor = "bg-green-500";
-        } else if (comparing?.includes(index)) {
-          bgColor = "bg-yellow-500";
-        } else if (algorithm === "quick-sort") {
-          if (index === pivot) bgColor = "bg-red-500";
-          else if (index === i) bgColor = "bg-blue-500";
-          else if (index === j) bgColor = "bg-purple-500";
-          else if (index >= low && index <= high) bgColor = "bg-primary/40";
-        }
-
-        const height = (value / maxVal) * 280;
-
-        return (
-          <div key={index} className="flex flex-col items-center gap-2">
-            <div
-              className={`w-10 ${bgColor} rounded-t transition-all duration-200`}
-              style={{ height: `${height}px` }}
-            />
-            <span className="text-xs font-mono text-muted-foreground">{value}</span>
+                    <div className="border-t border-border pt-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                          <Sparkles className="h-4 w-4" />
+                          AI Explanation
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleExplainStep}
+                          disabled={aiLoading}
+                        >
+                          {aiLoading ? (
+                            <>
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              Thinking...
+                            </>
+                          ) : (
+                            "Explain This Step"
+                          )}
+                        </Button>
+                      </div>
+                      {aiExplanation && (
+                        <div className="text-sm text-muted-foreground bg-background/50 rounded-md p-3">
+                          {aiExplanation}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
-        );
-      })}
-    </div>
-  );
-}
+        </TabsContent>
 
-function BinarySearchVisualization({ step }: { step: AlgoStep }) {
-  const { array, left, right, mid, target, found } = step.state;
-
-  return (
-    <div className="flex flex-col items-center justify-center h-full gap-8 p-8">
-      <div className="text-lg font-medium">
-        Target: <span className="text-primary font-bold">{target}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        {array.map((value: number, index: number) => {
-          let bgColor = "bg-muted";
-          let textColor = "text-foreground";
-
-          if (found && index === mid) {
-            bgColor = "bg-green-500";
-            textColor = "text-white";
-          } else if (index === mid) {
-            bgColor = "bg-yellow-500";
-            textColor = "text-black";
-          } else if (index >= left && index <= right) {
-            bgColor = "bg-primary/30";
-          } else {
-            bgColor = "bg-muted/50";
-            textColor = "text-muted-foreground";
-          }
-
-          return (
-            <div
-              key={index}
-              className={`w-12 h-12 flex items-center justify-center rounded-lg font-mono font-bold ${bgColor} ${textColor} transition-all duration-200`}
-            >
-              {value}
-            </div>
-          );
-        })}
-      </div>
-      <div className="flex gap-8 text-sm">
-        <span>Left: <strong>{left}</strong></span>
-        <span>Mid: <strong>{mid >= 0 ? mid : "-"}</strong></span>
-        <span>Right: <strong>{right}</strong></span>
-      </div>
-    </div>
-  );
-}
-
-function DijkstraVisualization({ step }: { step: AlgoStep }) {
-  const { nodes, edges, distances, visited, current, updating } = step.state || {};
-
-  if (!nodes || !edges) {
-    return <div className="flex items-center justify-center h-full text-muted-foreground">Loading...</div>;
-  }
-
-  return (
-    <svg className="w-full h-full" viewBox="0 0 500 300">
-      {/* Edges */}
-      {edges.map((edge: any, i: number) => {
-        const from = nodes[edge.from];
-        const to = nodes[edge.to];
-        if (!from || !to) return null;
-        const midX = (from.x + to.x) / 2;
-        const midY = (from.y + to.y) / 2;
-
-        return (
-          <g key={i}>
-            <line
-              x1={from.x}
-              y1={from.y}
-              x2={to.x}
-              y2={to.y}
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-muted-foreground/50"
-            />
-            <text
-              x={midX}
-              y={midY - 5}
-              textAnchor="middle"
-              className="text-xs fill-muted-foreground"
-            >
-              {edge.weight}
-            </text>
-          </g>
-        );
-      })}
-
-      {/* Nodes */}
-      {nodes.map((node: any) => {
-        let fill = "hsl(var(--muted))";
-        if (node.id === current) fill = "hsl(var(--primary))";
-        else if (node.id === updating) fill = "hsl(47, 100%, 50%)";
-        else if (visited?.includes(node.id)) fill = "hsl(142, 76%, 36%)";
-
-        return (
-          <g key={node.id}>
-            <circle
-              cx={node.x}
-              cy={node.y}
-              r="25"
-              fill={fill}
-              className="transition-all duration-200"
-            />
-            <text
-              x={node.x}
-              y={node.y}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              className="text-sm font-bold fill-white"
-            >
-              {node.label}
-            </text>
-            <text
-              x={node.x}
-              y={node.y + 40}
-              textAnchor="middle"
-              className="text-xs fill-muted-foreground"
-            >
-              d={distances?.[node.id] === Infinity ? "∞" : distances?.[node.id]}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-function AStarVisualization({ step }: { step: AlgoStep }) {
-  const { grid, start, end, openSet, closedSet, path, current, adding } = step.state || {};
-  const cellSize = 45;
-  const gap = 2;
-
-  if (!grid || !grid.length) {
-    return <div className="flex items-center justify-center h-full text-muted-foreground">Loading...</div>;
-  }
-
-  return (
-    <div className="flex items-center justify-center h-full">
-      <div className="grid" style={{ gridTemplateColumns: `repeat(${grid[0].length}, ${cellSize}px)`, gap: `${gap}px` }}>
-        {grid.map((row: number[], y: number) =>
-          row.map((cell: number, x: number) => {
-            let bgColor = "bg-muted/50";
-
-            if (cell === 1) {
-              bgColor = "bg-foreground/80";
-            } else if (path?.some((p: any) => p.x === x && p.y === y)) {
-              bgColor = "bg-primary";
-            } else if (current?.x === x && current?.y === y) {
-              bgColor = "bg-yellow-500";
-            } else if (adding?.x === x && adding?.y === y) {
-              bgColor = "bg-blue-400";
-            } else if (x === start?.x && y === start?.y) {
-              bgColor = "bg-green-500";
-            } else if (x === end?.x && y === end?.y) {
-              bgColor = "bg-red-500";
-            } else if (openSet?.some((n: any) => n.x === x && n.y === y)) {
-              bgColor = "bg-blue-300/50";
-            } else if (closedSet?.some((n: any) => n.x === x && n.y === y)) {
-              bgColor = "bg-muted";
-            }
-
-            return (
-              <div
-                key={`${x}-${y}`}
-                className={`${bgColor} rounded transition-all duration-150`}
-                style={{ width: cellSize, height: cellSize }}
-              />
-            );
-          })
-        )}
-      </div>
+        <TabsContent value="sql" className="flex-1 mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+            <Card className="lg:col-span-1 h-fit">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="h-5 w-5" />
+                  SQL Query
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Write SQL</Label>
+                  <Textarea
+                    value={sqlQuery}
+                    onChange={(e) => setSqlQuery(e.target.value)}
+                    placeholder="SELECT * FROM users;"
+                    className="min-h-[200px] font-mono text-xs"
+                  />
+                </div>
+                <Button onClick={handleRunSqlQuery} disabled={isSqlLoading} className="w-full">
+                  {isSqlLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+                  Run Query
+                </Button>
+                <div className="text-xs text-muted-foreground">
+                  Note: This is a simulation. You can write standard SQL to see how result sets might look.
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="lg:col-span-2 h-full min-h-[500px]">
+              <CardHeader>
+                <CardTitle>Result Set</CardTitle>
+              </CardHeader>
+              <CardContent className="h-[calc(100%-5rem)]">
+                {sqlData ? (
+                  <SqlVisualizer data={sqlData} />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    Run a query to see results
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

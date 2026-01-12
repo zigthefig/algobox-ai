@@ -23,10 +23,13 @@ import {
   Send,
   Bot,
   User,
-  Trash2
+  Trash2,
+  Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import VisualCanvas from "@/components/visualisation/VisualCanvas";
+
 
 // Mock problem data
 const currentProblem = {
@@ -77,6 +80,7 @@ public:
         
     }
 };`,
+
   },
 };
 
@@ -95,24 +99,36 @@ export default function Practice() {
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"problem" | "hints">("problem");
+  const [activeOutputTab, setActiveOutputTab] = useState<"execution" | "visualization">("execution");
   const [showHints, setShowHints] = useState<number[]>([]);
   const [testResults, setTestResults] = useState(testCases);
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
   const [inputValue, setInputValue] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [executionData, setExecutionData] = useState<any>(null);
+  const [visualizationData, setVisualizationData] = useState<any>(null);
+  const [currentVisStep, setCurrentVisStep] = useState(0);
 
   const handleLanguageChange = (newLang: Language) => {
     setLanguage(newLang);
     setCode(currentProblem.starterCode[newLang]);
+    // Reset output and visualization when language changes
+    setOutput(null);
+    setVisualizationData(null);
+    setExecutionData(null);
   };
 
-  const handleRun = async () => {
+  const handleRun = async (visualize = false) => {
     setIsRunning(true);
     setOutput(null);
     setExecutionData(null);
-    // don't clear chat history on run, maybe just add a separator? or nothing.
-    // setMessages([]); 
+
+    if (!visualize) {
+      setVisualizationData(null);
+      setActiveOutputTab("execution");
+    } else {
+      setActiveOutputTab("visualization");
+    }
 
     try {
       // Prepare tests in the format expected by the server
@@ -143,7 +159,7 @@ export default function Practice() {
 
       try {
         const { data, error } = await supabase.functions.invoke("debug-code", {
-          body: { code, language, tests: testsPayload, skipAnalysis: true },
+          body: { code, language, tests: testsPayload, skipAnalysis: true, visualize },
         });
 
         if (error) {
@@ -155,6 +171,7 @@ export default function Practice() {
 
         const analysis = data?.analysis ?? null;
         const execution = data?.execution ?? null;
+        const visualization = data?.visualization ?? null;
 
         // Update test results if execution provides tests
         if (execution?.tests && Array.isArray(execution.tests)) {
@@ -169,6 +186,13 @@ export default function Practice() {
         }
 
         setExecutionData(execution);
+
+        if (visualization) {
+          setVisualizationData(visualization);
+          setCurrentVisStep(0);
+        } else if (visualize) {
+          setOutput("No visualization data generated.");
+        }
 
         if (analysis) {
           // Auto-analysis disabled on Run
@@ -187,6 +211,7 @@ export default function Practice() {
     setCode(currentProblem.starterCode[language]);
     setOutput(null);
     setTestResults(testCases.map(tc => ({ ...tc, passed: null })));
+    setVisualizationData(null);
   };
 
   const handleSendMessage = async (text?: string) => {
@@ -327,7 +352,7 @@ export default function Practice() {
         {/* Middle Panel: Editor & Output */}
         <ResizablePanel defaultSize={50} minSize={30}>
           <ResizablePanelGroup direction="vertical">
-            <ResizablePanel defaultSize={70} minSize={30}>
+            <ResizablePanel defaultSize={60} minSize={30}>
               <div className="flex h-full flex-col">
                 {/* Editor Header */}
                 <div className="flex items-center justify-between border-b border-border bg-muted/40 p-2 h-10">
@@ -345,7 +370,11 @@ export default function Practice() {
                     ))}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button size="sm" onClick={handleRun} disabled={isRunning} className="h-7 text-xs">
+                    <Button size="sm" onClick={() => handleRun(true)} disabled={isRunning} variant="outline" className="h-7 text-xs">
+                      <Eye className="mr-1 h-3 w-3" />
+                      Visualize
+                    </Button>
+                    <Button size="sm" onClick={() => handleRun(false)} disabled={isRunning} className="h-7 text-xs">
                       {isRunning ? <Clock className="mr-1 h-3 w-3 animate-spin" /> : <Play className="mr-1 h-3 w-3" />}
                       Run
                     </Button>
@@ -375,20 +404,26 @@ export default function Practice() {
 
             <ResizableHandle />
 
-            <ResizablePanel defaultSize={30} minSize={10}>
-              <div className="flex h-full flex-col bg-muted/20">
-                <div className="flex items-center justify-between border-b border-border px-4 py-2 bg-muted/40 h-8">
-                  <span className="text-xs font-semibold">Execution Results</span>
-                  <div className="flex gap-1">
-                    {testResults.map((tc, i) => (
-                      <div key={i} className={cn(
-                        "w-2 h-2 rounded-full",
-                        tc.passed === true ? "bg-green-500" : tc.passed === false ? "bg-red-500" : "bg-gray-500"
-                      )} />
-                    ))}
-                  </div>
+            <ResizablePanel defaultSize={40} minSize={10}>
+              <Tabs value={activeOutputTab} onValueChange={(v) => setActiveOutputTab(v as "execution" | "visualization")} className="flex flex-col h-full bg-muted/20">
+                <div className="flex items-center justify-between border-b border-border px-4 bg-muted/40 h-8">
+                  <TabsList className="h-full bg-transparent p-0">
+                    <TabsTrigger value="execution" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 text-xs">execution</TabsTrigger>
+                    <TabsTrigger value="visualization" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 text-xs">Visualization</TabsTrigger>
+                  </TabsList>
+                  {activeOutputTab === "execution" && (
+                    <div className="flex gap-1">
+                      {testResults.map((tc, i) => (
+                        <div key={i} className={cn(
+                          "w-2 h-2 rounded-full",
+                          tc.passed === true ? "bg-green-500" : tc.passed === false ? "bg-red-500" : "bg-gray-500"
+                        )} />
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="flex-1 overflow-auto p-4 font-mono text-xs">
+
+                <TabsContent value="execution" className="flex-1 overflow-auto p-4 font-mono text-xs mt-0">
                   {executionData ? (
                     <div className="space-y-4">
                       {executionData.error ? (
@@ -439,8 +474,56 @@ export default function Practice() {
                   ) : (
                     <span className="text-muted-foreground">Run your code to see results...</span>
                   )}
-                </div>
-              </div>
+                </TabsContent>
+                <TabsContent value="visualization" className="flex-1 overflow-hidden p-0 mt-0">
+                  {visualizationData ? (
+                    visualizationData.type === 'algorithm' ? (
+                      <div className="flex flex-col h-full">
+                        <div className="flex-1 relative">
+                          <VisualCanvas
+                            algorithm={visualizationData.algorithm}
+                            steps={visualizationData.steps}
+                            currentStep={currentVisStep}
+                          />
+                        </div>
+                        <div className="h-10 border-t border-border flex items-center justify-between px-4 bg-muted/40">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setCurrentVisStep(Math.max(0, currentVisStep - 1))}
+                            disabled={currentVisStep === 0}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <span className="text-xs font-mono">
+                            Step {currentVisStep + 1} / {visualizationData.steps.length}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setCurrentVisStep(Math.min(visualizationData.steps.length - 1, currentVisStep + 1))}
+                            disabled={currentVisStep === visualizationData.steps.length - 1}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {visualizationData.steps[currentVisStep]?.description && (
+                          <div className="p-2 border-t border-border text-xs text-center bg-muted/20">
+                            {visualizationData.steps[currentVisStep].description}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-4 text-muted-foreground">Unsupported visualization type.</div>
+                    )
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-4">
+                      <Sparkles className="h-8 w-8 mb-2 opacity-50" />
+                      <p>Click "Visualize" to see code execution.</p>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </ResizablePanel>
           </ResizablePanelGroup>
         </ResizablePanel>
