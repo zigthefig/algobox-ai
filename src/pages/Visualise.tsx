@@ -30,6 +30,7 @@ import { D3BinarySearchVisualization } from "@/components/visualisation/D3Binary
 import { D3GraphVisualization } from "@/components/visualisation/D3GraphVisualization";
 import { D3GridVisualization } from "@/components/visualisation/D3GridVisualization";
 import { SqlVisualizer } from "@/components/visualisation/SqlVisualizer";
+import { SqlLabPlayground } from "@/components/sql-lab/SqlLabPlayground";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -855,48 +856,7 @@ export default function Visualise() {
         </TabsContent>
 
         <TabsContent value="sql" className="flex-1 mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-            <Card className="lg:col-span-1 h-fit">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Database className="h-5 w-5" />
-                  SQL Query
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Write SQL</Label>
-                  <Textarea
-                    value={sqlQuery}
-                    onChange={(e) => setSqlQuery(e.target.value)}
-                    placeholder="SELECT * FROM users;"
-                    className="min-h-[200px] font-mono text-xs"
-                  />
-                </div>
-                <Button onClick={handleRunSqlQuery} disabled={isSqlLoading} className="w-full">
-                  {isSqlLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                  Run Query
-                </Button>
-                <div className="text-xs text-muted-foreground">
-                  Note: This is a simulation. You can write standard SQL to see how result sets might look.
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="lg:col-span-2 h-full min-h-[500px]">
-              <CardHeader>
-                <CardTitle>Result Set</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[calc(100%-5rem)]">
-                {sqlData ? (
-                  <SqlVisualizer data={sqlData} />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground">
-                    Run a query to see results
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          <SqlLabPlayground />
         </TabsContent>
       </Tabs>
     </div>
