@@ -12,10 +12,10 @@ serve(async (req) => {
 
   try {
     const { algorithm, step, stepType, description, code } = await req.json();
-    
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not configured");
+
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) {
+      throw new Error("GROQ_API_KEY is not configured");
     }
 
     const systemPrompt = `You are an expert algorithm teacher. Your job is to explain algorithm steps in a clear, educational way.
@@ -36,32 +36,24 @@ ${code ? `\nRelevant Code:\n${code}` : ''}
 Provide a clear, beginner-friendly explanation of what's happening and why.`;
 
     const response = await fetch(
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { text: systemPrompt + "\n\n" + userPrompt }
-          ]
-        }
-      ],
-      generationConfig: {
-        maxOutputTokens: 300,
-        temperature: 0.7
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${GROQ_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-oss-120b",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          max_tokens: 300,
+          temperature: 0.7
+        })
       }
-    })
-  }
-);
-
-const data = await response.json();
-console.log(data.candidates[0].content.parts[0].text);
-
+    );
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -70,14 +62,8 @@ console.log(data.candidates[0].content.parts[0].text);
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("Groq API error:", response.status, errorText);
       throw new Error("Failed to get AI response");
     }
 

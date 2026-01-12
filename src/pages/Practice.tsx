@@ -1,12 +1,11 @@
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import Editor from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
 import {
   Play,
@@ -21,8 +20,13 @@ import {
   MessageSquare,
   Settings,
   Maximize2,
+  Send,
+  Bot,
+  User,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 // Mock problem data
 const currentProblem = {
@@ -90,33 +94,31 @@ export default function Practice() {
   const [code, setCode] = useState(currentProblem.starterCode[language]);
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"problem" | "hints" | "ai">("problem");
+  const [activeTab, setActiveTab] = useState<"problem" | "hints">("problem");
   const [showHints, setShowHints] = useState<number[]>([]);
   const [testResults, setTestResults] = useState(testCases);
-  const [aiResponse, setAiResponse] = useState<string | null>(null);
-  const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>("");
+  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
+  const [inputValue, setInputValue] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [executionData, setExecutionData] = useState<any>(null);
 
   const handleLanguageChange = (newLang: Language) => {
     setLanguage(newLang);
     setCode(currentProblem.starterCode[newLang]);
   };
 
-  const handleVisualize = () => {
-    if (selectedAlgorithm) {
-      navigate(`/visualise/${selectedAlgorithm}`);
-    }
-  };
-
   const handleRun = async () => {
     setIsRunning(true);
     setOutput(null);
-    setAiResponse(null);
+    setExecutionData(null);
+    // don't clear chat history on run, maybe just add a separator? or nothing.
+    // setMessages([]); 
 
     try {
       // Prepare tests in the format expected by the server
       const testsPayload = testResults.map((t) => ({ input: t.input, expected: t.expected }));
 
-      // Dynamically import the Supabase client at runtime to avoid synchronous require errors in the browser preview
+      // Dynamically import the Supabase client at runtime
       let supabase: any;
       try {
         const mod = await import("@/integrations/supabase/client");
@@ -124,7 +126,6 @@ export default function Practice() {
       } catch (err) {
         console.error("Failed to import supabase client:", err);
         setOutput("Supabase client not available in this environment.");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if ((err as any)?.message) {
           setOutput((prev) => `${prev}\n\n${(err as any).message}`);
         }
@@ -142,7 +143,7 @@ export default function Practice() {
 
       try {
         const { data, error } = await supabase.functions.invoke("debug-code", {
-          body: { code, language, tests: testsPayload },
+          body: { code, language, tests: testsPayload, skipAnalysis: true },
         });
 
         if (error) {
@@ -167,17 +168,11 @@ export default function Practice() {
           setTestResults(updated);
         }
 
-        // Build output text
-        let out = "";
-        if (execution) {
-          out += "Execution Results:\n" + JSON.stringify(execution, null, 2) + "\n\n";
-        }
-        if (analysis) {
-          out += "AI Analysis:\n" + analysis;
-          setAiResponse(analysis);
-        }
+        setExecutionData(execution);
 
-        setOutput(out || "No output returned.");
+        if (analysis) {
+          // Auto-analysis disabled on Run
+        }
       } catch (err: any) {
         console.error("Error invoking debug-code:", err);
         setOutput(`Error invoking debug-code: ${err?.message || String(err)}`);
@@ -194,94 +189,119 @@ export default function Practice() {
     setTestResults(testCases.map(tc => ({ ...tc, passed: null })));
   };
 
-  const handleAskAI = () => {
-    setAiResponse("Analyzing your code...\n\n🔍 **Issue Found:**\nYour current approach uses a nested loop which results in O(n²) time complexity.\n\n💡 **Suggestion:**\nUse a hash map to store indices. For each element, check if `target - element` exists in the map.\n\n```python\ndef twoSum(nums, target):\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n```\n\nThis reduces time complexity to O(n).");
+  const handleSendMessage = async (text?: string) => {
+    const content = text || inputValue;
+    if (!content.trim()) return;
+
+    // Add user message immediately
+    const userMsg = { role: "user" as const, content };
+    setMessages(prev => [...prev, userMsg]);
+    setInputValue("");
+    setIsAiLoading(true);
+
+    try {
+      const testsPayload = testResults.map((t) => ({ input: t.input, expected: t.expected }));
+
+      // Dynamically import the Supabase client
+      let supabase: any;
+      try {
+        const mod = await import("@/integrations/supabase/client");
+        supabase = (mod as any).supabase;
+      } catch (err) {
+        setMessages(prev => [...prev, { role: "assistant", content: "Error: Supabase client not available." }]);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("debug-code", {
+        body: {
+          code,
+          language,
+          tests: testsPayload,
+          skipAnalysis: false,
+          executionResults: executionData,
+          userQuestion: content
+        },
+      });
+
+      if (error) {
+        setMessages(prev => [...prev, { role: "assistant", content: `Error: ${error.message}` }]);
+        return;
+      }
+
+      if (data?.analysis) {
+        setMessages(prev => [...prev, { role: "assistant", content: data.analysis }]);
+      } else {
+        setMessages(prev => [...prev, { role: "assistant", content: "AI could not analyze the code." }]);
+      }
+    } catch (err: any) {
+      setMessages(prev => [...prev, { role: "assistant", content: `Error: ${err?.message}` }]);
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
+  const clearChat = () => setMessages([]);
+
   const toggleHint = (index: number) => {
-    setShowHints(prev => 
+    setShowHints(prev =>
       prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
     );
   };
 
   return (
-    <div className="flex h-full">
-      {/* Left Panel - Problem Description */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="flex w-[35%] flex-col border-r border-border"
-      >
-        {/* Problem Header */}
-        <div className="flex items-center justify-between border-b border-border p-4">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon-sm">
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="font-semibold">{currentProblem.title}</h1>
-              <div className="flex items-center gap-2">
-                <Badge variant={currentProblem.difficulty}>{currentProblem.difficulty}</Badge>
-                {currentProblem.tags.map(tag => (
-                  <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
-                ))}
-              </div>
+    <div className="h-full bg-background">
+      <ResizablePanelGroup direction="horizontal" className="min-h-[200px] border rounded-lg">
+
+        {/* Left Panel: Problem Description */}
+        <ResizablePanel defaultSize={25} minSize={20} className="border-r border-border">
+          <div className="flex bg-muted/40 h-10 items-center justify-between px-2 border-b border-border">
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon-sm" onClick={() => navigate(-1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="font-semibold text-sm">{currentProblem.title}</span>
             </div>
-            <Button variant="ghost" size="icon-sm">
-              <ChevronRight className="h-4 w-4" />
-            </Button>
           </div>
-        </div>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="h-[calc(100%-40px)] flex flex-col">
+            <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent px-4">
+              <TabsTrigger value="problem" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
+                Description
+              </TabsTrigger>
+              <TabsTrigger value="hints" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
+                Hints
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="problem" className="flex-1 overflow-auto p-4 mt-0">
+              <div className="prose prose-invert max-w-none text-sm">
+                <div className="whitespace-pre-wrap text-foreground">{currentProblem.description}</div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="flex-1 flex flex-col">
-          <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent px-4">
-            <TabsTrigger value="problem" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-              Problem
-            </TabsTrigger>
-            <TabsTrigger value="hints" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-              <Lightbulb className="mr-1 h-4 w-4" />
-              Hints
-            </TabsTrigger>
-            <TabsTrigger value="ai" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-              <Sparkles className="mr-1 h-4 w-4" />
-              AI Help
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="problem" className="flex-1 overflow-auto p-4 mt-0">
-            <div className="prose prose-invert max-w-none">
-              <div className="whitespace-pre-wrap text-foreground">{currentProblem.description}</div>
-              
-              <h3 className="mt-6 text-lg font-semibold">Examples</h3>
-              {currentProblem.examples.map((example, i) => (
-                <div key={i} className="mt-4 rounded-lg bg-muted/50 p-4 font-mono text-sm">
-                  <div><span className="text-muted-foreground">Input:</span> {example.input}</div>
-                  <div><span className="text-muted-foreground">Output:</span> {example.output}</div>
-                  {example.explanation && (
-                    <div className="mt-2 text-muted-foreground">{example.explanation}</div>
-                  )}
-                </div>
-              ))}
-
-              <h3 className="mt-6 text-lg font-semibold">Constraints</h3>
-              <ul className="mt-2 list-disc pl-5 text-sm text-muted-foreground">
-                {currentProblem.constraints.map((constraint, i) => (
-                  <li key={i} className="font-mono">{constraint}</li>
+                <h3 className="mt-6 text-md font-semibold">Examples</h3>
+                {currentProblem.examples.map((example, i) => (
+                  <div key={i} className="mt-4 rounded-lg bg-muted/50 p-4 font-mono text-xs">
+                    <div><span className="text-muted-foreground">Input:</span> {example.input}</div>
+                    <div><span className="text-muted-foreground">Output:</span> {example.output}</div>
+                    {example.explanation && (
+                      <div className="mt-2 text-muted-foreground">{example.explanation}</div>
+                    )}
+                  </div>
                 ))}
-              </ul>
-            </div>
-          </TabsContent>
 
-          <TabsContent value="hints" className="flex-1 overflow-auto p-4 mt-0">
-            <div className="space-y-3">
+                <h3 className="mt-6 text-md font-semibold">Constraints</h3>
+                <ul className="mt-2 list-disc pl-5 text-xs text-muted-foreground">
+                  {currentProblem.constraints.map((constraint, i) => (
+                    <li key={i} className="font-mono">{constraint}</li>
+                  ))}
+                </ul>
+              </div>
+            </TabsContent>
+            <TabsContent value="hints" className="flex-1 overflow-auto p-4 mt-0">
               {currentProblem.hints.map((hint, i) => (
-                <div key={i} className="rounded-lg border border-border bg-card p-4">
+                <div key={i} className="rounded-lg border border-border bg-card p-4 mb-3">
                   <button
                     onClick={() => toggleHint(i)}
                     className="flex w-full items-center justify-between text-left"
                   >
-                    <span className="font-medium">Hint {i + 1}</span>
+                    <span className="font-medium text-sm">Hint {i + 1}</span>
                     <Lightbulb className={cn(
                       "h-4 w-4 transition-colors",
                       showHints.includes(i) ? "text-warning" : "text-muted-foreground"
@@ -291,197 +311,227 @@ export default function Practice() {
                     <motion.p
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
-                      className="mt-2 text-sm text-muted-foreground"
+                      className="mt-2 text-xs text-muted-foreground"
                     >
                       {hint}
                     </motion.p>
                   )}
                 </div>
               ))}
-            </div>
-          </TabsContent>
+            </TabsContent>
+          </Tabs>
+        </ResizablePanel>
 
-          <TabsContent value="ai" className="flex-1 overflow-auto p-4 mt-0">
-            <div className="space-y-4">
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-                <div className="flex items-center gap-2 text-primary">
-                  <Sparkles className="h-5 w-5" />
-                  <span className="font-medium">AI Debugging Assistant</span>
+        <ResizableHandle />
+
+        {/* Middle Panel: Editor & Output */}
+        <ResizablePanel defaultSize={50} minSize={30}>
+          <ResizablePanelGroup direction="vertical">
+            <ResizablePanel defaultSize={70} minSize={30}>
+              <div className="flex h-full flex-col">
+                {/* Editor Header */}
+                <div className="flex items-center justify-between border-b border-border bg-muted/40 p-2 h-10">
+                  <div className="flex items-center gap-2">
+                    {(["python", "javascript", "cpp"] as Language[]).map((lang) => (
+                      <Button
+                        key={lang}
+                        variant={language === lang ? "secondary" : "ghost"}
+                        size="sm"
+                        onClick={() => handleLanguageChange(lang)}
+                        className="text-xs h-7 px-2"
+                      >
+                        {lang === "cpp" ? "C++" : lang.charAt(0).toUpperCase() + lang.slice(1)}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" onClick={handleRun} disabled={isRunning} className="h-7 text-xs">
+                      {isRunning ? <Clock className="mr-1 h-3 w-3 animate-spin" /> : <Play className="mr-1 h-3 w-3" />}
+                      Run
+                    </Button>
+                  </div>
                 </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Get personalized help with your code. The AI will analyze your solution and provide targeted feedback.
-                </p>
-                <Button className="mt-4" onClick={handleAskAI}>
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Explain My Mistake
+                <div className="flex-1 overflow-hidden">
+                  <Editor
+                    height="100%"
+                    language={language === "cpp" ? "cpp" : language}
+                    value={code}
+                    onChange={(value) => setCode(value || "")}
+                    theme="vs-dark"
+                    options={{
+                      fontSize: 14,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      minimap: { enabled: false },
+                      padding: { top: 16 },
+                      scrollBeyondLastLine: false,
+                      automaticLayout: true,
+                      tabSize: 2,
+                      wordWrap: "on",
+                    }}
+                  />
+                </div>
+              </div>
+            </ResizablePanel>
+
+            <ResizableHandle />
+
+            <ResizablePanel defaultSize={30} minSize={10}>
+              <div className="flex h-full flex-col bg-muted/20">
+                <div className="flex items-center justify-between border-b border-border px-4 py-2 bg-muted/40 h-8">
+                  <span className="text-xs font-semibold">Execution Results</span>
+                  <div className="flex gap-1">
+                    {testResults.map((tc, i) => (
+                      <div key={i} className={cn(
+                        "w-2 h-2 rounded-full",
+                        tc.passed === true ? "bg-green-500" : tc.passed === false ? "bg-red-500" : "bg-gray-500"
+                      )} />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex-1 overflow-auto p-4 font-mono text-xs">
+                  {executionData ? (
+                    <div className="space-y-4">
+                      {executionData.error ? (
+                        <div className="rounded-md bg-destructive/10 p-3 text-destructive border border-destructive/20">
+                          <div className="font-semibold mb-1">Execution Error</div>
+                          <div>{executionData.error}</div>
+                          {executionData.details && <div className="mt-1 opacity-75">{executionData.details}</div>}
+                        </div>
+                      ) : (
+                        executionData.tests?.map((test: any, i: number) => (
+                          <div key={i} className="rounded border border-border bg-card overflow-hidden">
+                            <div className={cn(
+                              "flex items-center justify-between px-3 py-2 border-b border-border/50",
+                              test.passed ? "bg-green-500/10" : "bg-red-500/10"
+                            )}>
+                              <span className="font-medium">Test Case {i + 1}</span>
+                              <Badge variant={test.passed ? "default" : "destructive"} className={cn(test.passed && "bg-green-600 hover:bg-green-700")}>
+                                {test.passed ? "Passed" : "Failed"}
+                              </Badge>
+                            </div>
+                            <div className="p-3 grid grid-cols-2 gap-4">
+                              <div>
+                                <div className="text-muted-foreground mb-1">Input</div>
+                                <div className="bg-muted p-2 rounded">{test.input}</div>
+                              </div>
+                              <div>
+                                <div className="text-muted-foreground mb-1">Expected</div>
+                                <div className="bg-muted p-2 rounded">{test.expected}</div>
+                              </div>
+                              <div className="col-span-2">
+                                <div className="text-muted-foreground mb-1">Actual Output</div>
+                                <div className={cn("p-2 rounded font-semibold", test.passed ? "bg-muted" : "bg-red-500/10 text-red-400")}>
+                                  {test.stdout !== null ? test.stdout.trim() : <span className="italic opacity-50">No output (stdout is empty)</span>}
+                                </div>
+                                {test.stderr && (
+                                  <div className="mt-2 text-destructive bg-destructive/10 p-2 rounded">
+                                    {test.stderr}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  ) : output ? (
+                    <pre className="whitespace-pre-wrap">{output}</pre>
+                  ) : (
+                    <span className="text-muted-foreground">Run your code to see results...</span>
+                  )}
+                </div>
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </ResizablePanel>
+
+        <ResizableHandle />
+
+        {/* Right Panel: AI Chat */}
+        <ResizablePanel defaultSize={25} minSize={20} className="border-l border-border bg-card flex flex-col">
+          <div className="flex items-center justify-between border-b border-border p-3 h-10 bg-muted/40">
+            <div className="flex items-center">
+              <Sparkles className="h-4 w-4 text-primary mr-2" />
+              <span className="text-sm font-semibold">Leet Assistant</span>
+            </div>
+            <Button variant="ghost" size="icon-sm" onClick={clearChat} title="Clear Chat">
+              <Trash2 className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </div>
+
+          <div className="flex-1 overflow-auto p-4 space-y-4">
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4 opacity-50">
+                <Bot className="h-12 w-12 mb-4" />
+                <p className="font-medium mb-1">Stuck?</p>
+                <p className="text-xs">Leet guides you through every line.</p>
+                <Button variant="secondary" size="sm" className="mt-4" onClick={() => handleSendMessage("Analyze my code and explain any bugs.")}>
+                  Quick Debug
                 </Button>
               </div>
-
-              {aiResponse && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="rounded-lg border border-border bg-card p-4"
-                >
-                  <div className="prose prose-invert max-w-none text-sm whitespace-pre-wrap">
-                    {aiResponse}
-                  </div>
-                </motion.div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </motion.div>
-
-      {/* Right Panel - Code Editor and Sidebar */}
-      <div className="flex flex-1">
-        {/* Code Editor */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="flex flex-1 flex-col border-r border-border"
-        >
-        <div className="flex items-center justify-between border-b border-border p-2">
-          <div className="flex items-center gap-2">
-            {(["python", "javascript", "cpp"] as Language[]).map((lang) => (
-              <Button
-                key={lang}
-                variant={language === lang ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => handleLanguageChange(lang)}
-                className="text-xs"
-              >
-                {lang === "cpp" ? "C++" : lang.charAt(0).toUpperCase() + lang.slice(1)}
-              </Button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon-sm">
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon-sm">
-              <Maximize2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Monaco Editor */}
-        <div className="flex-1">
-          <Editor
-            height="100%"
-            language={language === "cpp" ? "cpp" : language}
-            value={code}
-            onChange={(value) => setCode(value || "")}
-            theme="vs-dark"
-            options={{
-              fontSize: 14,
-              fontFamily: "'JetBrains Mono', monospace",
-              minimap: { enabled: false },
-              padding: { top: 16 },
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              tabSize: 2,
-              wordWrap: "on",
-            }}
-          />
-        </div>
-
-        {/* Test Cases & Output */}
-        <div className="border-t border-border">
-          <div className="flex items-center justify-between border-b border-border p-2">
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-medium">Test Cases</span>
-              <div className="flex items-center gap-2">
-                {testResults.map((tc, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "flex h-6 w-6 items-center justify-center rounded text-xs font-medium",
-                      tc.passed === true && "bg-success/20 text-success",
-                      tc.passed === false && "bg-destructive/20 text-destructive",
-                      tc.passed === null && "bg-muted text-muted-foreground"
-                    )}
-                  >
-                    {tc.passed === true ? <CheckCircle2 className="h-4 w-4" /> :
-                     tc.passed === false ? <XCircle className="h-4 w-4" /> :
-                     i + 1}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleReset}>
-                <RotateCcw className="mr-1 h-4 w-4" />
-                Reset
-              </Button>
-              <Button size="sm" onClick={handleRun} disabled={isRunning}>
-                {isRunning ? (
-                  <>
-                    <Clock className="mr-1 h-4 w-4 animate-spin" />
-                    Running...
-                  </>
-                ) : (
-                  <>
-                    <Play className="mr-1 h-4 w-4" />
-                    Run Code
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {/* Output */}
-          <div className="h-32 overflow-auto bg-code-bg p-4">
-            {output ? (
-              <pre className="font-mono text-sm text-foreground">{output}</pre>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                Click "Run Code" to see output...
-              </p>
+              messages.map((msg, idx) => (
+                <div key={idx} className={cn(
+                  "flex flex-col max-w-[90%]",
+                  msg.role === "user" ? "self-end items-end" : "self-start items-start"
+                )}>
+                  <div className={cn(
+                    "rounded-lg px-3 py-2 text-sm",
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-foreground prose prose-invert prose-sm max-w-none prose-headings:text-primary prose-headings:font-semibold prose-p:text-muted-foreground"
+                  )}>
+                    {msg.role === "assistant" ? (
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    ) : (
+                      msg.content
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+            {isAiLoading && (
+              <div className="self-start items-start max-w-[90%]">
+                <div className="bg-muted rounded-lg px-4 py-3">
+                  <div className="flex gap-1">
+                    <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  </div>
+                </div>
+              </div>
             )}
           </div>
-        </div>
-      </motion.div>
 
-      {/* Algorithm Selection Sidebar */}
-      <div className="w-80 flex flex-col border-l border-border bg-card">
-        <div className="p-4 border-b border-border">
-          <h3 className="font-semibold text-lg">Algorithm Visualization</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Select an algorithm to visualize its execution step by step.
-          </p>
-        </div>
-        <div className="p-4 space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Choose Algorithm</label>
-            <Select value={selectedAlgorithm} onValueChange={setSelectedAlgorithm}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select an algorithm" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="bubble-sort">Bubble Sort</SelectItem>
-                <SelectItem value="quick-sort">Quick Sort</SelectItem>
-                <SelectItem value="merge-sort">Merge Sort</SelectItem>
-                <SelectItem value="binary-search">Binary Search</SelectItem>
-                <SelectItem value="a-star">A* Pathfinding</SelectItem>
-                <SelectItem value="dijkstra">Dijkstra's Algorithm</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="p-3 border-t border-border bg-background/50">
+            <div className="relative flex items-center gap-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  className="w-full bg-muted/50 border border-input rounded-md pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="Ask a question..."
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+                  disabled={isAiLoading}
+                />
+                <Button
+                  size="icon-sm"
+                  className="absolute right-1 top-1 h-7 w-7"
+                  onClick={() => handleSendMessage()}
+                  disabled={!inputValue.trim() || isAiLoading}
+                >
+                  <Send className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+            <div className="text-[10px] text-muted-foreground text-center mt-2 opacity-50">
+              AI can make mistakes. Check important info.
+            </div>
           </div>
-          <Button 
-            onClick={handleVisualize} 
-            disabled={!selectedAlgorithm}
-            className="w-full"
-          >
-            <Sparkles className="mr-2 h-4 w-4" />
-            Visualize Algorithm
-          </Button>
-          <div className="text-xs text-muted-foreground">
-            This will open the algorithm visualization in a new page with interactive controls.
-          </div>
-        </div>
-      </div>
-      </div>
+        </ResizablePanel>
+
+      </ResizablePanelGroup>
     </div>
   );
 }
