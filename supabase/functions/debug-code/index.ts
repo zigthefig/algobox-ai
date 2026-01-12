@@ -88,33 +88,72 @@ serve(async (req) => {
             Your task is to trace the execution of the provided code and generate a JSON representation of the state at each significant step.
             
             Rules:
-            1. Analyze the code logic (sorting, searching, etc.).
-            2. If it's a known algorithm (Bubble Sort, Binary Search, etc.), map it to the 'visual-canvas' format.
-            3. If it's a generic array manipulation (like Two Sum), map it to a simple array visualization.
+            1. Analyze the code logic (sorting, searching, hash map operations, etc.).
+            2. Generate step-by-step visualization data showing the algorithm's execution.
+            3. Include ALL relevant state changes: array values, indices being compared, hash map state, variables, and results.
             4. Return ONLY valid JSON in the following format:
             {
                 "type": "algorithm",
-                "algorithm": "bubble-sort", // or 'quick-sort', 'generic-array'
+                "algorithm": "two-sum",
                 "steps": [
                     {
                         "index": 0,
-                        "type": "compare",
-                        "description": "Comparing index 0 and 1",
+                        "type": "initialize",
+                        "description": "Starting with nums=[2,7,11,15], target=9",
                         "state": {
                              "array": [2, 7, 11, 15],
-                             "comparing": [0, 1], // indices being compared
+                             "target": 9,
+                             "comparing": [],
+                             "highlighted": [],
+                             "found": [],
                              "sorted": [],
-                             "variables": { "i": 0, "j": 1 }
+                             "hashMap": {},
+                             "variables": { "i": 0 },
+                             "result": null
                         }
                     },
-                    ...
+                    {
+                        "index": 1,
+                        "type": "iterate",
+                        "description": "Checking nums[0]=2, need 7. Adding 2->0 to hash map.",
+                        "state": {
+                             "array": [2, 7, 11, 15],
+                             "target": 9,
+                             "comparing": [0],
+                             "highlighted": [0],
+                             "found": [],
+                             "sorted": [],
+                             "hashMap": { "2": 0 },
+                             "variables": { "i": 0, "num": 2, "diff": 7 },
+                             "result": null
+                        }
+                    },
+                    {
+                        "index": 2,
+                        "type": "found",
+                        "description": "Found! nums[1]=7, diff=2 exists in hashMap at index 0",
+                        "state": {
+                             "array": [2, 7, 11, 15],
+                             "target": 9,
+                             "comparing": [0, 1],
+                             "highlighted": [],
+                             "found": [0, 1],
+                             "sorted": [],
+                             "hashMap": { "2": 0 },
+                             "variables": { "i": 1, "num": 7, "diff": 2 },
+                             "result": [0, 1]
+                        }
+                    }
                 ]
             }
             
-            Note for 'two-sum':
-            - Treat it as a 'generic-array' or simulate 'bubble-sort' style highlighting if helpful.
-            - VisualCanvas expects specific 'algorithm' types: 'quick-sort', 'bubble-sort', 'merge-sort', 'binary-search'.
-            - If it doesn't fit, map it to 'bubble-sort' but just use highligting for 'comparing' to show current indices being checked.
+            Important:
+            - hashMap: Object showing key-value pairs as the algorithm builds the map
+            - comparing: Array of indices currently being looked at
+            - highlighted: Array of indices to highlight (yellow)
+            - found: Array of indices that are part of the solution (green)
+            - target: The target value for algorithms like Two Sum
+            - result: The final result when found, null otherwise
             
             Return ONLY valid JSON.
             `;

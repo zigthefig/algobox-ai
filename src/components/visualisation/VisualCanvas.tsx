@@ -42,13 +42,74 @@ export default function VisualCanvas({ algorithm, steps, currentStep }: VisualCa
       renderAStar(ctx, step, canvas);
     } else if (algorithm === 'dijkstra') {
       renderDijkstra(ctx, step, canvas);
+    } else {
+      // Generic fallback for any array-based visualization
+      renderGenericArray(ctx, step, canvas);
     }
   }, [algorithm, steps, currentStep]);
+
+  const renderGenericArray = (ctx: CanvasRenderingContext2D, step: AlgoStep, canvas: HTMLCanvasElement) => {
+    const { array, comparing, sorted, highlighted, variables } = step.state || {};
+
+    // Try to find an array in the state
+    const arr = array || step.state?.nums || step.state?.data || [];
+    if (!arr || !arr.length) {
+      // No array found, show description only
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(step.description || 'No visualization data', canvas.width / 2, canvas.height / 2);
+      return;
+    }
+
+    const maxVal = Math.max(...arr.map((v: any) => Math.abs(typeof v === 'number' ? v : 0)), 1);
+    const barWidth = Math.min(50, (canvas.width - 100) / arr.length - 8);
+    const maxHeight = canvas.height - 120;
+    const startX = (canvas.width - (arr.length * (barWidth + 8))) / 2;
+    const startY = canvas.height - 60;
+
+    arr.forEach((value: any, index: number) => {
+      const x = startX + index * (barWidth + 8);
+      const numVal = typeof value === 'number' ? value : 0;
+      const height = Math.max(20, (Math.abs(numVal) / maxVal) * maxHeight);
+
+      // Determine color based on state
+      let color = '#6366f1'; // Default indigo
+      if (sorted?.includes(index)) {
+        color = '#22c55e'; // Green for sorted
+      } else if (comparing?.includes(index) || highlighted?.includes(index)) {
+        color = '#eab308'; // Yellow for comparing/highlighted
+      }
+
+      ctx.fillStyle = color;
+      ctx.fillRect(x, startY - height, barWidth, height);
+
+      // Value label
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(value), x + barWidth / 2, startY + 18);
+
+      // Index label
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px monospace';
+      ctx.fillText(String(index), x + barWidth / 2, startY + 32);
+    });
+
+    // Show variables if available
+    if (variables) {
+      const varStr = Object.entries(variables).map(([k, v]) => `${k}=${v}`).join('  ');
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(varStr, canvas.width / 2, 30);
+    }
+  };
 
   const renderQuickSort = (ctx: CanvasRenderingContext2D, step: AlgoStep, canvas: HTMLCanvasElement) => {
     const { array, low, high, pivot, i, j } = step.state;
     if (!array) return;
-    
+
     const maxVal = Math.max(...array);
     const barWidth = Math.min(40, (canvas.width - 100) / array.length - 5);
     const maxHeight = canvas.height - 80;
@@ -199,7 +260,7 @@ export default function VisualCanvas({ algorithm, steps, currentStep }: VisualCa
       for (let x = 0; x < cols; x++) {
         const px = offsetX + x * cellSize;
         const py = offsetY + y * cellSize;
-        
+
         let fillColor = '#1e293b';
 
         if (grid[y][x] === 1) {
@@ -236,7 +297,7 @@ export default function VisualCanvas({ algorithm, steps, currentStep }: VisualCa
     edges.forEach((edge: any) => {
       const from = nodes[edge.from];
       const to = nodes[edge.to];
-      
+
       ctx.beginPath();
       ctx.moveTo(from.x * scaleX, from.y * scaleY);
       ctx.lineTo(to.x * scaleX, to.y * scaleY);

@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import VisualCanvas from "@/components/visualisation/VisualCanvas";
+import { D3CodeVisualization } from "@/components/visualisation/D3CodeVisualization";
 
 
 // Mock problem data
@@ -66,20 +66,90 @@ You can return the answer in any order.`,
   ],
   tags: ["Array", "Hash Table"],
   starterCode: {
-    python: `def twoSum(nums: list[int], target: int) -> list[int]:
-    # Your code here
-    pass`,
+    python: `import json
+
+def twoSum(nums, target):
+    mp = {}
+    for i, num in enumerate(nums):
+        diff = target - num
+        if diff in mp:
+            return [mp[diff], i]
+        mp[num] = i
+    return []
+
+# Parse input: "[3,2,4], 6"
+line = input().strip()
+idx = line.rfind('],')
+nums = json.loads(line[:idx+1])
+target = int(line[idx+2:].strip())
+result = twoSum(nums, target)
+print(json.dumps(result, separators=(',', ':')))`,
     javascript: `function twoSum(nums, target) {
-    // Your code here
-    
-}`,
-    cpp: `class Solution {
+    // Your solution here
+    const map = new Map();
+    for (let i = 0; i < nums.length; i++) {
+        const diff = target - nums[i];
+        if (map.has(diff)) {
+            return [map.get(diff), i];
+        }
+        map.set(nums[i], i);
+    }
+    return [];
+}
+
+// Parse input: "[2,7,11,15], 9"
+const readline = require('readline');
+const rl = readline.createInterface({ input: process.stdin });
+rl.on('line', (line) => {
+    const idx = line.lastIndexOf('],');
+    const nums = JSON.parse(line.slice(0, idx + 1));
+    const target = parseInt(line.slice(idx + 2).trim());
+    const result = twoSum(nums, target);
+    console.log(JSON.stringify(result));
+    rl.close();
+});`,
+    cpp: `#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <sstream>
+using namespace std;
+
+class Solution {
 public:
     vector<int> twoSum(vector<int>& nums, int target) {
-        // Your code here
-        
+        // Your solution here
+        unordered_map<int, int> mp;
+        for (int i = 0; i < nums.size(); i++) {
+            int diff = target - nums[i];
+            if (mp.find(diff) != mp.end()) {
+                return {mp[diff], i};
+            }
+            mp[nums[i]] = i;
+        }
+        return {};
     }
-};`,
+};
+
+int main() {
+    string line;
+    getline(cin, line);
+    // Parse "[2,7,11,15], 9"
+    size_t bracketEnd = line.rfind(']');
+    string arrStr = line.substr(1, bracketEnd - 1);
+    int target = stoi(line.substr(bracketEnd + 2));
+    
+    vector<int> nums;
+    stringstream ss(arrStr);
+    string token;
+    while (getline(ss, token, ',')) {
+        nums.push_back(stoi(token));
+    }
+    
+    Solution sol;
+    vector<int> result = sol.twoSum(nums, target);
+    cout << "[" << result[0] << "," << result[1] << "]" << endl;
+    return 0;
+}`,
 
   },
 };
@@ -479,11 +549,9 @@ export default function Practice() {
                   {visualizationData ? (
                     visualizationData.type === 'algorithm' ? (
                       <div className="flex flex-col h-full">
-                        <div className="flex-1 relative">
-                          <VisualCanvas
-                            algorithm={visualizationData.algorithm}
-                            steps={visualizationData.steps}
-                            currentStep={currentVisStep}
+                        <div className="flex-1 relative overflow-hidden">
+                          <D3CodeVisualization
+                            step={visualizationData.steps[currentVisStep]}
                           />
                         </div>
                         <div className="h-10 border-t border-border flex items-center justify-between px-4 bg-muted/40">
