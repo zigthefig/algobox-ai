@@ -101,17 +101,6 @@ export function CyberPractice({ labId }: CyberPracticeProps) {
                     </h2>
                     <p className="text-slate-400 mt-1">{currentChallenge.description}</p>
                 </div>
-                <div className="flex gap-2">
-                    {ALL_CHALLENGES.map(c => (
-                        <Button
-                            key={c.id}
-                            variant={currentChallengeId === c.id ? "secondary" : "ghost"}
-                            onClick={() => setCurrentChallengeId(c.id)}
-                        >
-                            {c.title}
-                        </Button>
-                    ))}
-                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0">
