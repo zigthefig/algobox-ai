@@ -16,6 +16,7 @@ import Notes from "./pages/Notes";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Visualise from "./pages/Visualise";
+import CyberLab from "./pages/CyberLab";
 import { DashboardLayout } from "./components/DashboardLayout";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/roadmap" element={<Roadmap />} />
               <Route path="/practice" element={<Practice />} />
               <Route path="/visualise" element={<Visualise />} />
+              <Route path="/cyber-lab" element={<CyberLab />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/notes" element={<Notes />} />
               <Route path="/settings" element={<Settings />} />

@@ -39,9 +39,12 @@ type Algorithm =
   | "bubble-sort"
   | "quick-sort"
   | "merge-sort"
+  | "insertion-sort"
+  | "selection-sort"
   | "binary-search"
   | "dijkstra"
-  | "a-star";
+  | "a-star"
+  | "bfs";
 
 interface AlgoStep {
   index: number;
@@ -54,10 +57,233 @@ const ALGORITHMS: { id: Algorithm; name: string; category: string }[] = [
   { id: "bubble-sort", name: "Bubble Sort", category: "Sorting" },
   { id: "quick-sort", name: "Quick Sort", category: "Sorting" },
   { id: "merge-sort", name: "Merge Sort", category: "Sorting" },
+  { id: "insertion-sort", name: "Insertion Sort", category: "Sorting" },
+  { id: "selection-sort", name: "Selection Sort", category: "Sorting" },
   { id: "binary-search", name: "Binary Search", category: "Searching" },
   { id: "dijkstra", name: "Dijkstra's Algorithm", category: "Graph" },
   { id: "a-star", name: "A* Pathfinding", category: "Graph" },
+  { id: "bfs", name: "Breadth-First Search", category: "Graph" },
 ];
+
+function generateInsertionSortSteps(arr: number[]): AlgoStep[] {
+  const steps: AlgoStep[] = [];
+  const array = [...arr];
+  const n = array.length;
+
+  steps.push({
+    index: 0,
+    type: "init",
+    state: { array: [...array], comparing: [], sorted: [], highlighted: [] },
+    description: `Starting Insertion Sort with array: [${array.join(", ")}]`,
+  });
+
+  for (let i = 1; i < n; i++) {
+    let key = array[i];
+    let j = i - 1;
+
+    steps.push({
+      index: steps.length,
+      type: "select",
+      state: { array: [...array], comparing: [i], sorted: [], highlighted: [i] },
+      description: `Selected key ${key} at index ${i}`,
+    });
+
+    while (j >= 0 && array[j] > key) {
+      steps.push({
+        index: steps.length,
+        type: "compare",
+        state: { array: [...array], comparing: [j, j + 1], sorted: [], highlighted: [i] },
+        description: `Comparing ${array[j]} > ${key}`,
+      });
+
+      array[j + 1] = array[j];
+      steps.push({
+        index: steps.length,
+        type: "shift",
+        state: { array: [...array], comparing: [j, j + 1], sorted: [], highlighted: [] },
+        description: `Shifted ${array[j]} to position ${j + 1}`,
+      });
+      j = j - 1;
+    }
+    array[j + 1] = key;
+    steps.push({
+      index: steps.length,
+      type: "insert",
+      state: { array: [...array], comparing: [], sorted: [], highlighted: [j + 1] },
+      description: `Inserted ${key} at position ${j + 1}`,
+    });
+  }
+
+  steps.push({
+    index: steps.length,
+    type: "done",
+    state: { array: [...array], comparing: [], sorted: Array.from({ length: n }, (_, i) => i), highlighted: [] },
+    description: `Sorting complete!`,
+  });
+
+  return steps;
+}
+
+function generateSelectionSortSteps(arr: number[]): AlgoStep[] {
+  const steps: AlgoStep[] = [];
+  const array = [...arr];
+  const n = array.length;
+
+  steps.push({
+    index: 0,
+    type: "init",
+    state: { array: [...array], comparing: [], sorted: [], highlighted: [] },
+    description: `Starting Selection Sort`
+  });
+
+  for (let i = 0; i < n - 1; i++) {
+    let minIdx = i;
+    steps.push({
+      index: steps.length,
+      type: "select-min",
+      state: { array: [...array], comparing: [], sorted: Array.from({ length: i }, (_, k) => k), highlighted: [minIdx] },
+      description: `Current minimum is ${array[minIdx]} at index ${minIdx}`
+    });
+
+    for (let j = i + 1; j < n; j++) {
+      steps.push({
+        index: steps.length,
+        type: "compare",
+        state: { array: [...array], comparing: [j, minIdx], sorted: Array.from({ length: i }, (_, k) => k), highlighted: [minIdx] },
+        description: `Checking if ${array[j]} < ${array[minIdx]}`
+      });
+
+      if (array[j] < array[minIdx]) {
+        minIdx = j;
+        steps.push({
+          index: steps.length,
+          type: "new-min",
+          state: { array: [...array], comparing: [], sorted: Array.from({ length: i }, (_, k) => k), highlighted: [minIdx] },
+          description: `New minimum found: ${array[minIdx]} at index ${minIdx}`
+        });
+      }
+    }
+
+    if (minIdx !== i) {
+      [array[i], array[minIdx]] = [array[minIdx], array[i]];
+      steps.push({
+        index: steps.length,
+        type: "swap",
+        state: { array: [...array], comparing: [i, minIdx], sorted: Array.from({ length: i }, (_, k) => k), highlighted: [] },
+        description: `Swapped minimum ${array[i]} to position ${i}`
+      });
+    }
+  }
+
+  steps.push({
+    index: steps.length,
+    type: "done",
+    state: { array: [...array], comparing: [], sorted: Array.from({ length: n }, (_, i) => i), highlighted: [] },
+    description: `Sorting complete!`
+  });
+  return steps;
+}
+
+function generateBFSSteps(): AlgoStep[] {
+  const steps: AlgoStep[] = [];
+  const rows = 6;
+  const cols = 8;
+  const grid: number[][] = Array(rows).fill(null).map(() => Array(cols).fill(0));
+  grid[1][2] = 1;
+  grid[2][2] = 1;
+  grid[3][2] = 1;
+  grid[3][3] = 1;
+  grid[1][5] = 1;
+  grid[2][5] = 1;
+
+  const start = { x: 0, y: 2 };
+  const end = { x: 7, y: 3 };
+
+  const queue: { x: number, y: number }[] = [start];
+  const visited = new Set<string>();
+  visited.add(`${start.x},${start.y}`);
+
+  steps.push({
+    index: 0,
+    type: "init",
+    state: { grid, start, end, openSet: [...queue], closedSet: [], path: [], current: null },
+    description: "Initialize BFS - Breadth-First Search"
+  });
+
+  const parentMap = new Map<string, { x: number, y: number }>();
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+
+    steps.push({
+      index: steps.length,
+      type: "visit",
+      state: {
+        grid, start, end,
+        openSet: queue.map(n => ({ x: n.x, y: n.y })),
+        closedSet: Array.from(visited).map(s => { const [x, y] = s.split(','); return { x: +x, y: +y } }),
+        path: [], current
+      },
+      description: `Visiting (${current.x}, ${current.y})`
+    });
+
+    if (current.x === end.x && current.y === end.y) {
+      const path = [];
+      let currStr = `${end.x},${end.y}`;
+      while (currStr) {
+        const posParts = currStr.split(',');
+        const pos = { x: parseInt(posParts[0]), y: parseInt(posParts[1]) };
+        path.unshift(pos);
+        const par = parentMap.get(currStr);
+        currStr = par ? `${par.x},${par.y}` : "";
+      }
+
+      steps.push({
+        index: steps.length,
+        type: "done",
+        state: { grid, start, end, openSet: [], closedSet: [...Array.from(visited).map(s => { const [x, y] = s.split(','); return { x: +x, y: +y } })], path, current: null },
+        description: "Path found!"
+      });
+      return steps;
+    }
+
+    const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+    for (const [dx, dy] of directions) {
+      const nx = current.x + dx;
+      const ny = current.y + dy;
+
+      if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && grid[ny][nx] !== 1) {
+        const key = `${nx},${ny}`;
+        if (!visited.has(key)) {
+          visited.add(key);
+          parentMap.set(key, current);
+          queue.push({ x: nx, y: ny });
+
+          steps.push({
+            index: steps.length,
+            type: "enqueue",
+            state: {
+              grid, start, end,
+              openSet: queue.map(n => ({ x: n.x, y: n.y })),
+              closedSet: Array.from(visited).map(s => { const [x, y] = s.split(','); return { x: +x, y: +y } }),
+              path: [], current, adding: { x: nx, y: ny }
+            },
+            description: `Enqueuing neighbor (${nx}, ${ny})`
+          });
+        }
+      }
+    }
+  }
+
+  steps.push({
+    index: steps.length,
+    type: "no-path",
+    state: { grid, start, end, openSet: [], closedSet: [...Array.from(visited).map(s => { const [x, y] = s.split(','); return { x: +x, y: +y } })], path: [], current: null },
+    description: "No path found!"
+  });
+
+  return steps;
+}
 
 function generateBubbleSortSteps(arr: number[]): AlgoStep[] {
   const steps: AlgoStep[] = [];
@@ -595,6 +821,15 @@ export default function Visualise() {
       case "a-star":
         newSteps = generateAStarSteps();
         break;
+      case "insertion-sort":
+        newSteps = generateInsertionSortSteps(arr);
+        break;
+      case "selection-sort":
+        newSteps = generateSelectionSortSteps(arr);
+        break;
+      case "bfs":
+        newSteps = generateBFSSteps();
+        break;
     }
 
     setSteps(newSteps);
@@ -631,7 +866,7 @@ export default function Visualise() {
   const handleStepForward = () => setCurrentStep(prev => Math.min(steps.length - 1, prev + 1));
 
   const currentStepData = steps[currentStep];
-  const isSortingAlgo = ["bubble-sort", "quick-sort", "merge-sort"].includes(algorithm);
+  const isSortingAlgo = ["bubble-sort", "quick-sort", "merge-sort", "insertion-sort", "selection-sort"].includes(algorithm);
   const isSearchAlgo = algorithm === "binary-search";
 
   const { isLoading: aiLoading, explanation: aiExplanation, explainStep, clearExplanation } = useAIExplanation();
@@ -811,7 +1046,7 @@ export default function Visualise() {
                   {algorithm === "dijkstra" && currentStepData && (
                     <D3GraphVisualization step={currentStepData} />
                   )}
-                  {algorithm === "a-star" && currentStepData && (
+                  {(algorithm === "a-star" || algorithm === "bfs") && currentStepData && (
                     <D3GridVisualization step={currentStepData} />
                   )}
                 </div>

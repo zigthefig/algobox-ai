@@ -23,6 +23,7 @@ import {
   PlayCircle,
   LogOut,
   User,
+  Shield,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +39,7 @@ const navItems: NavItem[] = [
   { label: "Roadmap", href: "/roadmap", icon: <Map className="h-5 w-5" /> },
   { label: "Practice", href: "/practice", icon: <Code2 className="h-5 w-5" /> },
   { label: "Visualize", href: "/visualise", icon: <PlayCircle className="h-5 w-5" /> },
+  { label: "Cyber Lab", href: "/cyber-lab", icon: <Shield className="h-5 w-5" /> },
   { label: "Analytics", href: "/analytics", icon: <BarChart3 className="h-5 w-5" /> },
   { label: "Notes", href: "/notes", icon: <FileText className="h-5 w-5" /> },
 ];

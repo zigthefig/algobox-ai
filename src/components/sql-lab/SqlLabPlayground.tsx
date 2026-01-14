@@ -36,6 +36,12 @@ export function SqlLabPlayground() {
 
     const currentDb = databases[selectedDb as keyof typeof databases];
 
+    const [history, setHistory] = useState<{ query: string, timestamp: number }[]>([]);
+
+    const addToHistory = (q: string) => {
+        setHistory(prev => [{ query: q, timestamp: Date.now() }, ...prev].slice(0, 50));
+    };
+
     const executeQuery = useCallback(() => {
         setError(null);
         setIsExecuting(true);
@@ -46,6 +52,7 @@ export function SqlLabPlayground() {
             setExecutionSteps(steps);
             setCurrentStep(0);
             setIsPlaying(false);
+            addToHistory(query);
             toast.success(`Query parsed: ${steps.length} execution steps`);
         } catch (e: any) {
             setError(e.message);
@@ -54,6 +61,21 @@ export function SqlLabPlayground() {
             setIsExecuting(false);
         }
     }, [query, currentDb]);
+
+    const handleExport = () => {
+        if (executionSteps.length === 0) return;
+        // In this simplified engine, finding the "result" step is tricky as it's execution steps.
+        // But usually the last step's result or intermediate result is what we want.
+        // Let's assume the executionSteps contain the data.
+        // For now, exporting the execution plan/steps as JSON.
+        const blob = new Blob([JSON.stringify(executionSteps, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `query_result_${Date.now()}.json`;
+        a.click();
+        toast.success("Results exported!");
+    };
 
     // Auto-play functionality
     useEffect(() => {
@@ -88,6 +110,8 @@ export function SqlLabPlayground() {
                         selectedDb={selectedDb}
                         onSelectDb={setSelectedDb}
                         onTableClick={(table) => setQuery(`SELECT * FROM ${table}`)}
+                        history={history}
+                        onHistorySelect={setQuery}
                     />
                 </div>
 
@@ -114,14 +138,19 @@ export function SqlLabPlayground() {
                 <Card className="p-4 bg-slate-900/50 border-slate-700">
                     <div className="flex items-center justify-between mb-3">
                         <h3 className="text-sm font-semibold text-slate-300">SQL Editor</h3>
-                        <Button onClick={executeQuery} disabled={isExecuting} size="sm">
-                            {isExecuting ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Play className="mr-2 h-4 w-4" />
-                            )}
-                            Execute & Visualize
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button onClick={handleExport} disabled={executionSteps.length === 0} size="sm" variant="outline">
+                                Export JSON
+                            </Button>
+                            <Button onClick={executeQuery} disabled={isExecuting} size="sm">
+                                {isExecuting ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Play className="mr-2 h-4 w-4" />
+                                )}
+                                Execute & Visualize
+                            </Button>
+                        </div>
                     </div>
                     <div className="h-32 rounded-lg overflow-hidden border border-slate-700">
                         <Editor

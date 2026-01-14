@@ -225,7 +225,8 @@ export function D3CodeVisualization({ step }: D3CodeVisualizationProps) {
 
             // Result indicator
             if (state.comparison?.result !== undefined || (state.original !== undefined && state.reversed !== undefined)) {
-                const isEqual = state.comparison?.result ?? (state.original === state.reversed);
+                // Fix: Convert to string for comparison to handle number vs string cases (e.g. 121 vs "121")
+                const isEqual = state.comparison?.result ?? (String(state.original) === String(state.reversed));
                 const resultY = centerY + boxHeight + 30;
 
                 g.append("text")
