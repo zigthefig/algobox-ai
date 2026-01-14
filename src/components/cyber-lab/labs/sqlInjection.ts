@@ -1,4 +1,4 @@
-import { LabScenario, CyberState, CyberNode } from "../types";
+import { LabScenario, CyberState, CyberNode, NodeType, NodeStatus } from "../types";
 
 const baseTopology = {
     nodes: [
@@ -14,25 +14,35 @@ const baseTopology = {
     ]
 };
 
+interface NodeUpdate {
+    id: string;
+    type?: NodeType;
+    status?: NodeStatus;
+    data?: string;
+    label?: string;
+    isCompromised?: boolean;
+    hasShield?: boolean;
+}
+
 // Helper to merge updates into the base topology
-const getLabState = (nodeUpdates: Partial<CyberNode>[], packetUpdates: any[] = []): CyberState => {
+const getLabState = (nodeUpdates: NodeUpdate[], packetUpdates: any[] = []): CyberState => {
     // 1. Start with clean base nodes
-    const finalNodes = baseTopology.nodes.map(n => ({ ...n, status: "idle" as const, data: undefined }));
+    const finalNodes: CyberNode[] = baseTopology.nodes.map(n => ({ 
+        ...n, 
+        status: "idle" as NodeStatus, 
+        data: undefined 
+    }));
 
     // 2. Apply updates by ID
     nodeUpdates.forEach(update => {
         const index = finalNodes.findIndex(n => n.id === update.id);
         if (index !== -1) {
-            finalNodes[index] = { ...finalNodes[index], ...update };
-        } else {
-            // If it's a new node (e.g. attacker replacing client), add or swap?
-            // For this simple lab, we usually just update properties of existing IDs.
-            // If we actually change 'client' node to 'attacker' type, we just update the type.
+            finalNodes[index] = { ...finalNodes[index], ...update } as CyberNode;
         }
     });
 
     return {
-        nodes: finalNodes as CyberNode[],
+        nodes: finalNodes,
         links: baseTopology.links,
         packets: packetUpdates
     };
@@ -51,7 +61,7 @@ export const sqlInjectionLab: LabScenario = {
             phase: "Reconnaissance",
             description: "The attacker probes the input field with a single quote (') to test for errors.",
             state: getLabState([
-                { id: "client", status: "active", data: "Input: '", type: "client" }
+                { id: "client", status: "active", data: "Input: '" }
             ]),
             explanation: {
                 title: "Vulnerability Probing",

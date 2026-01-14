@@ -57,7 +57,7 @@ export interface LabScenario {
     steps: CyberStep[];
     fixSteps: CyberStep[];
     topology: { // Base topology
-        nodes: Omit<CyberNode, "status" | "data">[];
+        nodes: Omit<CyberNode, "status" | "data" | "isCompromised" | "hasShield">[];
         links: CyberLink[];
     };
 }

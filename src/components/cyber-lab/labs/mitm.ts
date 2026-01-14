@@ -1,4 +1,4 @@
-import { LabScenario, CyberState } from "../types";
+import { LabScenario, CyberState, CyberNode, NodeStatus } from "../types";
 
 const baseTopology = {
     nodes: [
@@ -16,12 +16,24 @@ const baseTopology = {
     ]
 };
 
-const getBaseState = (updates: Partial<CyberState> = {}): CyberState => ({
-    nodes: baseTopology.nodes.map(n => ({ ...n, status: "idle" })),
-    links: baseTopology.links.slice(0, 2), // Start with only normal links
-    packets: [],
-    ...updates
-});
+interface NodeUpdate extends Partial<CyberNode> {
+    id: string;
+}
+
+const getBaseState = (updates: Partial<CyberState> = {}): CyberState => {
+    const defaultNodes: CyberNode[] = baseTopology.nodes.map(n => ({ 
+        ...n, 
+        status: "idle" as NodeStatus,
+        data: undefined
+    }));
+    
+    return {
+        nodes: defaultNodes,
+        links: baseTopology.links.slice(0, 2), // Start with only normal links
+        packets: [],
+        ...updates
+    };
+};
 
 export const mitmLab: LabScenario = {
     id: "mitm",
@@ -36,8 +48,10 @@ export const mitmLab: LabScenario = {
             description: "Normal traffic flow between Alice and the Router.",
             state: getBaseState({
                 nodes: [
-                    { ...baseTopology.nodes[0], status: "active", type: "client" },
-                    { ...baseTopology.nodes[2], status: "active", type: "router" }
+                    { ...baseTopology.nodes[0], status: "active" as NodeStatus, data: undefined },
+                    { ...baseTopology.nodes[1], status: "idle" as NodeStatus, data: undefined },
+                    { ...baseTopology.nodes[2], status: "active" as NodeStatus, data: undefined },
+                    { ...baseTopology.nodes[3], status: "idle" as NodeStatus, data: undefined }
                 ],
                 packets: [{ id: "p0", source: "client", target: "router", type: "data", content: "Hello", progress: 0.5 }]
             }),
@@ -50,7 +64,10 @@ export const mitmLab: LabScenario = {
             state: getBaseState({
                 links: baseTopology.links, // Show attacker links now
                 nodes: [
-                    { ...baseTopology.nodes[1], status: "active", data: "I am Router! / I am Alice!", type: "attacker" }
+                    { ...baseTopology.nodes[0], status: "idle" as NodeStatus, data: undefined },
+                    { ...baseTopology.nodes[1], status: "active" as NodeStatus, data: "I am Router! / I am Alice!" },
+                    { ...baseTopology.nodes[2], status: "idle" as NodeStatus, data: undefined },
+                    { ...baseTopology.nodes[3], status: "idle" as NodeStatus, data: undefined }
                 ],
                 packets: [
                     { id: "arp1", source: "attacker", target: "client", type: "exploit", content: "ARP: Router is Me", progress: 0.5 },
@@ -70,8 +87,10 @@ export const mitmLab: LabScenario = {
             state: getBaseState({
                 links: baseTopology.links,
                 nodes: [
-                    { ...baseTopology.nodes[0], status: "active", type: "client" },
-                    { ...baseTopology.nodes[1], status: "compromised", data: "Handling Traffic", type: "attacker" }
+                    { ...baseTopology.nodes[0], status: "active" as NodeStatus, data: undefined },
+                    { ...baseTopology.nodes[1], status: "compromised" as NodeStatus, data: "Handling Traffic" },
+                    { ...baseTopology.nodes[2], status: "idle" as NodeStatus, data: undefined },
+                    { ...baseTopology.nodes[3], status: "idle" as NodeStatus, data: undefined }
                 ],
                 packets: [
                     { id: "p1", source: "client", target: "attacker", type: "data", content: "PASS: secret123", progress: 0.5 }
@@ -90,8 +109,10 @@ export const mitmLab: LabScenario = {
             state: getBaseState({
                 links: baseTopology.links,
                 nodes: [
-                    { ...baseTopology.nodes[1], status: "compromised", data: "LOGGED: secret123", type: "attacker" },
-                    { ...baseTopology.nodes[2], status: "active", type: "router" }
+                    { ...baseTopology.nodes[0], status: "idle" as NodeStatus, data: undefined },
+                    { ...baseTopology.nodes[1], status: "compromised" as NodeStatus, data: "LOGGED: secret123" },
+                    { ...baseTopology.nodes[2], status: "active" as NodeStatus, data: undefined },
+                    { ...baseTopology.nodes[3], status: "idle" as NodeStatus, data: undefined }
                 ],
                 packets: [
                     { id: "p2", source: "attacker", target: "router", type: "data", content: "PASS: secret123", progress: 0.5 }
@@ -110,8 +131,10 @@ export const mitmLab: LabScenario = {
             state: getBaseState({
                 links: baseTopology.links,
                 nodes: [
-                    { ...baseTopology.nodes[1], status: "compromised", label: "Eve (Credentials Stolen)", type: "attacker" },
-                    { ...baseTopology.nodes[3], status: "active", type: "server" }
+                    { ...baseTopology.nodes[0], status: "idle" as NodeStatus, data: undefined },
+                    { ...baseTopology.nodes[1], status: "compromised" as NodeStatus, label: "Eve (Credentials Stolen)" },
+                    { ...baseTopology.nodes[2], status: "idle" as NodeStatus, data: undefined },
+                    { ...baseTopology.nodes[3], status: "active" as NodeStatus, data: undefined }
                 ]
             }),
             explanation: {
@@ -129,9 +152,10 @@ export const mitmLab: LabScenario = {
             state: getBaseState({
                 links: baseTopology.links,
                 nodes: [
-                    { ...baseTopology.nodes[0], status: "secure", type: "client", hasShield: true },
-                    { ...baseTopology.nodes[1], status: "active", type: "attacker" },
-                    { ...baseTopology.nodes[3], status: "secure", type: "server", hasShield: true }
+                    { ...baseTopology.nodes[0], status: "secure" as NodeStatus, hasShield: true, data: undefined },
+                    { ...baseTopology.nodes[1], status: "active" as NodeStatus, data: undefined },
+                    { ...baseTopology.nodes[2], status: "idle" as NodeStatus, data: undefined },
+                    { ...baseTopology.nodes[3], status: "secure" as NodeStatus, hasShield: true, data: undefined }
                 ]
             }),
             explanation: { title: "Defense: Encryption", content: "TLS creates an encrypted tunnel. Even if traffic is redirected, the payload is unreadable.", type: "success" }
@@ -142,6 +166,12 @@ export const mitmLab: LabScenario = {
             description: "Eve captures the traffic, but it's garbage.",
             state: getBaseState({
                 links: baseTopology.links,
+                nodes: [
+                    { ...baseTopology.nodes[0], status: "secure" as NodeStatus, hasShield: true, data: undefined },
+                    { ...baseTopology.nodes[1], status: "idle" as NodeStatus, data: undefined },
+                    { ...baseTopology.nodes[2], status: "idle" as NodeStatus, data: undefined },
+                    { ...baseTopology.nodes[3], status: "secure" as NodeStatus, hasShield: true, data: undefined }
+                ],
                 packets: [
                     { id: "p1", source: "client", target: "attacker", type: "encrypted", content: "x8$#kL9@...", progress: 0.5 }
                 ]

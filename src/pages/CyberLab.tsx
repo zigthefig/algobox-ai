@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { ALL_LABS } from "@/components/cyber-lab/labRegistry";
-import { D3CyberVisualizer } from "@/components/cyber-lab/visualizer/D3CyberVisualizer";
+import { EpicCyberVisualizer } from "@/components/cyber-lab/visualizer/EpicCyberVisualizer";
 
 export default function CyberLab() {
     const [currentLabId, setCurrentLabId] = useState<string>(ALL_LABS[0].id);
@@ -104,9 +104,8 @@ export default function CyberLab() {
                         {mode === "attack" ? "Exploitation Simulation" : "Secure Implementation"}
                     </div>
 
-                    <div className="flex-1 w-full h-full relative">
-                        {/* Render D3 Visualizer with the current state */}
-                        <D3CyberVisualizer state={currentStep.state} />
+                    <div className="flex-1 w-full h-full relative min-h-[400px]">
+                        <EpicCyberVisualizer state={currentStep.state} mode={mode} />
                     </div>
 
                     {/* Playback Controls */}

@@ -1,4 +1,4 @@
-import { LabScenario, CyberState, CyberNode } from "../types";
+import { LabScenario, CyberState, CyberNode, NodeStatus } from "../types";
 
 const baseTopology = {
     nodes: [
@@ -14,13 +14,30 @@ const baseTopology = {
     ]
 };
 
-const getLabState = (nodeUpdates: Partial<CyberNode>[], packetUpdates: any[] = []): CyberState => {
-    const finalNodes = baseTopology.nodes.map(n => ({ ...n, status: "idle" as const, data: undefined }));
+interface NodeUpdate {
+    id: string;
+    status?: NodeStatus;
+    data?: string;
+    label?: string;
+    isCompromised?: boolean;
+    hasShield?: boolean;
+}
+
+const getLabState = (nodeUpdates: NodeUpdate[], packetUpdates: any[] = []): CyberState => {
+    const finalNodes: CyberNode[] = baseTopology.nodes.map(n => ({ 
+        ...n, 
+        status: "idle" as NodeStatus, 
+        data: undefined 
+    }));
+    
     nodeUpdates.forEach(update => {
         const index = finalNodes.findIndex(n => n.id === update.id);
-        if (index !== -1) finalNodes[index] = { ...finalNodes[index], ...update };
+        if (index !== -1) {
+            finalNodes[index] = { ...finalNodes[index], ...update } as CyberNode;
+        }
     });
-    return { nodes: finalNodes as CyberNode[], links: baseTopology.links, packets: packetUpdates };
+    
+    return { nodes: finalNodes, links: baseTopology.links, packets: packetUpdates };
 };
 
 export const xssLab: LabScenario = {
