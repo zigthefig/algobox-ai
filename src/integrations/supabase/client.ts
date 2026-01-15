@@ -14,16 +14,31 @@ if (!SUPABASE_URL) {
     'VITE_SUPABASE_URL is not defined. Create a `.env` or `.env.local` with `VITE_SUPABASE_URL="https://your-project-ref.supabase.co"` and `VITE_SUPABASE_PUBLISHABLE_KEY="your-key"`'
   );
 
-  // Minimal stub compatible with usage in the app (mainly `supabase.functions.invoke`).
+  // Minimal stub compatible with usage in the app.
   const _stub = {
+    auth: {
+      getSession: async () => ({ data: { session: null }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      signUp: async () => ({ data: null, error: new Error('Supabase not configured') }),
+      signInWithPassword: async () => ({ data: null, error: new Error('Supabase not configured') }),
+      signInWithOAuth: async () => ({ data: null, error: new Error('Supabase not configured') }),
+      signOut: async () => ({ error: null }),
+    },
     functions: {
       invoke: async () => {
         throw new Error(
           'Supabase is not configured (missing VITE_SUPABASE_URL). Copy `.env.example` to `.env.local` and add your values, then restart the dev server.'
         );
       }
-    }
-  } as unknown as ReturnType<typeof createClient>;
+    },
+    from: () => ({
+      select: () => ({ eq: () => ({ data: [], error: null }) }),
+      insert: () => ({ select: () => ({ single: () => ({ data: null, error: null }) }), error: null }),
+      update: () => ({ eq: () => ({ select: () => ({ single: () => ({ data: null, error: null }) }), error: null }) }),
+      delete: () => ({ eq: () => ({ error: null }) }),
+      upsert: () => ({ error: null }),
+    }),
+  } as unknown as ReturnType<typeof createClient<Database>>;
 
   supabase = _stub;
 } else {
