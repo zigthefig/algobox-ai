@@ -21,10 +21,11 @@ export function login(username, password) {
 `;
 
 export const sqlInjectionChallenge: SecurityChallenge = {
-    id: "sql-injection", // Matches the lab ID
+    id: "sql-injection",
     title: "Prevent SQL Injection",
     type: "fix",
     difficulty: "Beginner",
+    language: "javascript",
     description: "The login function is vulnerable to SQL Injection due to unsafe string concatenation.",
     instructions: `
 1. The \`login\` function constructs a SQL query by directly concatenating the \`username\` and \`password\` arguments.

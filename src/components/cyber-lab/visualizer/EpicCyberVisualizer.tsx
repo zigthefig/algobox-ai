@@ -377,7 +377,7 @@ export function EpicCyberVisualizer({ state, mode }: EpicCyberVisualizerProps) {
         
         nodes.exit().transition().duration(300)
             .attr("opacity", 0)
-            .attr("transform", d => `translate(${xScale(d.x)}, ${yScale(d.y)}) scale(0)`)
+            .attr("transform", (d: CyberNode) => `translate(${xScale(d.x)}, ${yScale(d.y)}) scale(0)`)
             .remove();
         
         const nodesEnter = nodes.enter().append("g")

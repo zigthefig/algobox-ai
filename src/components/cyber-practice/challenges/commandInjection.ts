@@ -31,6 +31,7 @@ export const commandInjectionChallenge: SecurityChallenge = {
     title: "Prevent Command Injection",
     type: "fix",
     difficulty: "Advanced",
+    language: "javascript",
     description: "The application passes user input directly to a shell command, allowing arbitrary OS execution.",
     instructions: `
 1. The \`ping\` endpoint uses \`exec\` which spawns a shell (allows command chaining with \`;\`, \`|\`, etc.).

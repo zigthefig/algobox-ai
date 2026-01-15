@@ -26,10 +26,11 @@ app.get('/image', (req, res) => {
 `;
 
 export const pathTraversalChallenge: SecurityChallenge = {
-    id: "path-traversal", // Matches the lab ID
+    id: "path-traversal",
     title: "Prevent Path Traversal",
     type: "fix",
     difficulty: "Intermediate",
+    language: "javascript",
     description: "The application allows attackers to read arbitrary system files by manipulating the file path.",
     instructions: `
 1. The endpoint constructs a file path using \`req.query.file\`.
