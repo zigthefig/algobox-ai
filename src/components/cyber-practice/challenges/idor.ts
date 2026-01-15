@@ -30,10 +30,11 @@ app.get('/api/documents/:id', (req, res) => {
 `;
 
 export const idorChallenge: SecurityChallenge = {
-    id: "idor", // Matches the lab ID
+    id: "idor",
     title: "Prevent IDOR",
     type: "fix",
     difficulty: "Beginner",
+    language: "javascript",
     description: "The application allows users to access ANY document just by changing the ID number.",
     instructions: `
 1. The endpoint \`/api/documents/:id\` returns a document based solely on the URL parameter \`id\`.

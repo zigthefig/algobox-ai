@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 
 export interface ProblemProgress {
     problem_id: string;
@@ -15,7 +14,7 @@ export function useProgress() {
     const [progress, setProgress] = useState<Record<string, ProblemProgress>>({});
     const [loading, setLoading] = useState(true);
 
-    // Fetch user's progress
+    // Fetch user's progress from localStorage
     useEffect(() => {
         if (!user) {
             setProgress({});
@@ -23,29 +22,16 @@ export function useProgress() {
             return;
         }
 
-        const fetchProgress = async () => {
-            const { data, error } = await supabase
-                .from("problem_progress")
-                .select("*")
-                .eq("user_id", user.id);
-
-            if (!error && data) {
-                const progressMap: Record<string, ProblemProgress> = {};
-                data.forEach((item: any) => {
-                    progressMap[item.problem_id] = {
-                        problem_id: item.problem_id,
-                        status: item.status,
-                        code: item.code,
-                        language: item.language,
-                        solved_at: item.solved_at,
-                    };
-                });
-                setProgress(progressMap);
-            }
-            setLoading(false);
-        };
-
-        fetchProgress();
+        const stored = localStorage.getItem(`progress_${user.id}`);
+        if (stored) {
+            const items: ProblemProgress[] = JSON.parse(stored);
+            const progressMap: Record<string, ProblemProgress> = {};
+            items.forEach(item => {
+                progressMap[item.problem_id] = item;
+            });
+            setProgress(progressMap);
+        }
+        setLoading(false);
     }, [user]);
 
     // Update progress for a problem
@@ -56,45 +42,23 @@ export function useProgress() {
         if (!user) return;
 
         const existingProgress = progress[problemId];
+        const now = new Date().toISOString();
 
-        if (existingProgress) {
-            // Update existing
-            await supabase
-                .from("problem_progress")
-                .update({
-                    ...updates,
-                    ...(updates.status === "solved" && !existingProgress.solved_at
-                        ? { solved_at: new Date().toISOString() }
-                        : {}),
-                })
-                .eq("user_id", user.id)
-                .eq("problem_id", problemId);
-        } else {
-            // Insert new
-            await supabase.from("problem_progress").insert({
-                user_id: user.id,
-                problem_id: problemId,
-                status: updates.status || "attempted",
-                code: updates.code,
-                language: updates.language,
-                ...(updates.status === "solved" ? { solved_at: new Date().toISOString() } : {}),
-            });
-        }
+        const newProgress: ProblemProgress = {
+            problem_id: problemId,
+            status: updates.status || existingProgress?.status || "attempted",
+            code: updates.code || existingProgress?.code,
+            language: updates.language || existingProgress?.language,
+            solved_at: updates.status === "solved" ? now : existingProgress?.solved_at,
+        };
 
-        // Update local state
-        setProgress((prev) => ({
-            ...prev,
-            [problemId]: {
-                problem_id: problemId,
-                status: updates.status || existingProgress?.status || "attempted",
-                code: updates.code || existingProgress?.code,
-                language: updates.language || existingProgress?.language,
-                solved_at:
-                    updates.status === "solved"
-                        ? new Date().toISOString()
-                        : existingProgress?.solved_at,
-            },
-        }));
+        const newState = {
+            ...progress,
+            [problemId]: newProgress
+        };
+
+        setProgress(newState);
+        localStorage.setItem(`progress_${user.id}`, JSON.stringify(Object.values(newState)));
     };
 
     const getProgress = (problemId: string): ProblemProgress | null => {
@@ -102,7 +66,7 @@ export function useProgress() {
     };
 
     const getSolvedCount = (): number => {
-        return Object.values(progress).filter((p) => p.status === "solved").length;
+        return Object.values(progress).filter(p => p.status === "solved").length;
     };
 
     return { progress, loading, updateProgress, getProgress, getSolvedCount };

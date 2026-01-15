@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 
 export interface RoadmapItemProgress {
     topic_id: string;
@@ -13,7 +12,7 @@ export function useRoadmap() {
     const [roadmapProgress, setRoadmapProgress] = useState<Record<string, RoadmapItemProgress>>({});
     const [loading, setLoading] = useState(true);
 
-    // Fetch roadmap progress
+    // Fetch roadmap progress from localStorage
     useEffect(() => {
         if (!user) {
             setRoadmapProgress({});
@@ -21,58 +20,35 @@ export function useRoadmap() {
             return;
         }
 
-        const fetchRoadmapProgress = async () => {
-            const { data, error } = await supabase
-                .from("roadmap_progress")
-                .select("*")
-                .eq("user_id", user.id);
-
-            if (!error && data) {
-                const progressMap: Record<string, RoadmapItemProgress> = {};
-                data.forEach((item: any) => {
-                    progressMap[item.topic_id] = {
-                        topic_id: item.topic_id,
-                        completed: item.completed,
-                        completed_at: item.completed_at,
-                    };
-                });
-                setRoadmapProgress(progressMap);
-            }
-            setLoading(false);
-        };
-
-        fetchRoadmapProgress();
+        const stored = localStorage.getItem(`roadmap_${user.id}`);
+        if (stored) {
+            const items: RoadmapItemProgress[] = JSON.parse(stored);
+            const progressMap: Record<string, RoadmapItemProgress> = {};
+            items.forEach(item => {
+                progressMap[item.topic_id] = item;
+            });
+            setRoadmapProgress(progressMap);
+        }
+        setLoading(false);
     }, [user]);
 
     const toggleTopicCompletion = async (topicId: string, completed: boolean) => {
         if (!user) return;
 
-        if (completed) {
-            // Mark as completed
-            await supabase.from("roadmap_progress").upsert({
-                user_id: user.id,
-                topic_id: topicId,
-                completed: true,
-                completed_at: new Date().toISOString(),
-            });
-        } else {
-            // Mark as incomplete
-            await supabase.from("roadmap_progress").upsert({
-                user_id: user.id,
-                topic_id: topicId,
-                completed: false,
-                completed_at: null,
-            });
-        }
+        const now = new Date().toISOString();
+        const newProgress: RoadmapItemProgress = {
+            topic_id: topicId,
+            completed,
+            completed_at: completed ? now : undefined,
+        };
 
-        setRoadmapProgress((prev) => ({
-            ...prev,
-            [topicId]: {
-                topic_id: topicId,
-                completed,
-                completed_at: completed ? new Date().toISOString() : undefined,
-            },
-        }));
+        const newState = {
+            ...roadmapProgress,
+            [topicId]: newProgress
+        };
+
+        setRoadmapProgress(newState);
+        localStorage.setItem(`roadmap_${user.id}`, JSON.stringify(Object.values(newState)));
     };
 
     const isTopicCompleted = (topicId: string): boolean => {

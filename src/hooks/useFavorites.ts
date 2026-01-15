@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export function useFavorites() {
@@ -8,7 +7,7 @@ export function useFavorites() {
     const [favorites, setFavorites] = useState<Set<string>>(new Set());
     const [loading, setLoading] = useState(true);
 
-    // Fetch user's favorites
+    // Fetch user's favorites from localStorage
     useEffect(() => {
         if (!user) {
             setFavorites(new Set());
@@ -16,19 +15,11 @@ export function useFavorites() {
             return;
         }
 
-        const fetchFavorites = async () => {
-            const { data, error } = await supabase
-                .from("favorites")
-                .select("problem_id")
-                .eq("user_id", user.id);
-
-            if (!error && data) {
-                setFavorites(new Set(data.map((item: any) => item.problem_id)));
-            }
-            setLoading(false);
-        };
-
-        fetchFavorites();
+        const stored = localStorage.getItem(`favorites_${user.id}`);
+        if (stored) {
+            setFavorites(new Set(JSON.parse(stored)));
+        }
+        setLoading(false);
     }, [user]);
 
     const toggleFavorite = async (problemId: string) => {
@@ -38,31 +29,18 @@ export function useFavorites() {
         }
 
         const isFavorited = favorites.has(problemId);
+        const newFavorites = new Set(favorites);
 
         if (isFavorited) {
-            // Remove from favorites
-            await supabase
-                .from("favorites")
-                .delete()
-                .eq("user_id", user.id)
-                .eq("problem_id", problemId);
-
-            setFavorites((prev) => {
-                const next = new Set(prev);
-                next.delete(problemId);
-                return next;
-            });
+            newFavorites.delete(problemId);
             toast.success("Removed from favorites");
         } else {
-            // Add to favorites
-            await supabase.from("favorites").insert({
-                user_id: user.id,
-                problem_id: problemId,
-            });
-
-            setFavorites((prev) => new Set([...prev, problemId]));
+            newFavorites.add(problemId);
             toast.success("Added to favorites");
         }
+
+        setFavorites(newFavorites);
+        localStorage.setItem(`favorites_${user.id}`, JSON.stringify([...newFavorites]));
     };
 
     const isFavorite = (problemId: string): boolean => {

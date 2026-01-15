@@ -32,6 +32,7 @@ export const fileUploadChallenge: SecurityChallenge = {
     title: "Secure File Upload",
     type: "fix",
     difficulty: "Advanced",
+    language: "javascript",
     description: "The application accepts any file type, allowing attackers to upload shell scripts (e.g., .php, .jsp) and gain Remote Code Execution.",
     instructions: `
 1. The server saves files using \`uploadedFile.name\`, trusting the user's extension.
