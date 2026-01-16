@@ -1,6 +1,4 @@
 import { useEffect, useRef } from 'react';
-import * as d3 from 'd3';
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
 interface Particle {
   x: number;
@@ -9,18 +7,17 @@ interface Particle {
   vy: number;
   radius: number;
   opacity: number;
-  hue: number;
 }
 
 interface AnimatedBackgroundProps {
   variant?: 'default' | 'cyber' | 'minimal';
-  showLottie?: boolean;
+  intensity?: 'low' | 'medium' | 'high';
 }
 
-export function AnimatedBackground({ variant = 'default', showLottie = true }: AnimatedBackgroundProps) {
+export function AnimatedBackground({ variant = 'default', intensity = 'low' }: AnimatedBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
-  const mouseRef = useRef({ x: 0, y: 0 });
+  const mouseRef = useRef({ x: -1000, y: -1000 });
   const animationRef = useRef<number>(0);
 
   useEffect(() => {
@@ -38,16 +35,17 @@ export function AnimatedBackground({ variant = 'default', showLottie = true }: A
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Initialize particles
-    const particleCount = variant === 'minimal' ? 30 : variant === 'cyber' ? 80 : 50;
+    // Particle count based on intensity
+    const particleCounts = { low: 25, medium: 40, high: 60 };
+    const particleCount = particleCounts[intensity];
+    
     particlesRef.current = Array.from({ length: particleCount }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.5,
-      vy: (Math.random() - 0.5) * 0.5,
-      radius: Math.random() * 2 + 1,
-      opacity: Math.random() * 0.5 + 0.1,
-      hue: variant === 'cyber' ? 180 + Math.random() * 60 : 220 + Math.random() * 40,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      radius: Math.random() * 1.5 + 0.5,
+      opacity: Math.random() * 0.3 + 0.1,
     }));
 
     // Mouse tracking
@@ -58,36 +56,46 @@ export function AnimatedBackground({ variant = 'default', showLottie = true }: A
 
     // Animation loop
     const animate = () => {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       particlesRef.current.forEach((particle, i) => {
         // Update position
         particle.x += particle.vx;
         particle.y += particle.vy;
 
-        // Mouse interaction - particles flee from cursor
+        // Mouse interaction - subtle attraction
         const dx = mouseRef.current.x - particle.x;
         const dy = mouseRef.current.y - particle.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 150) {
-          const force = (150 - dist) / 150;
-          particle.vx -= (dx / dist) * force * 0.02;
-          particle.vy -= (dy / dist) * force * 0.02;
+        if (dist < 200 && dist > 0) {
+          const force = (200 - dist) / 200;
+          particle.vx += (dx / dist) * force * 0.005;
+          particle.vy += (dy / dist) * force * 0.005;
         }
 
         // Damping
         particle.vx *= 0.99;
         particle.vy *= 0.99;
 
-        // Bounds
-        if (particle.x < 0 || particle.x > canvas.width) particle.vx *= -1;
-        if (particle.y < 0 || particle.y > canvas.height) particle.vy *= -1;
+        // Speed limit
+        const speed = Math.sqrt(particle.vx ** 2 + particle.vy ** 2);
+        if (speed > 1) {
+          particle.vx = (particle.vx / speed) * 1;
+          particle.vy = (particle.vy / speed) * 1;
+        }
+
+        // Wrap around edges
+        if (particle.x < 0) particle.x = canvas.width;
+        if (particle.x > canvas.width) particle.x = 0;
+        if (particle.y < 0) particle.y = canvas.height;
+        if (particle.y > canvas.height) particle.y = 0;
 
         // Draw particle
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${particle.hue}, 70%, 60%, ${particle.opacity})`;
+        ctx.fillStyle = variant === 'cyber' 
+          ? `rgba(59, 130, 246, ${particle.opacity})`  // Blue for cyber
+          : `rgba(148, 163, 184, ${particle.opacity})`; // Slate for default
         ctx.fill();
 
         // Draw connections
@@ -96,11 +104,14 @@ export function AnimatedBackground({ variant = 'default', showLottie = true }: A
           const dy = other.y - particle.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          if (distance < 120) {
+          if (distance < 150) {
             ctx.beginPath();
             ctx.moveTo(particle.x, particle.y);
             ctx.lineTo(other.x, other.y);
-            ctx.strokeStyle = `hsla(${particle.hue}, 60%, 50%, ${0.15 * (1 - distance / 120)})`;
+            const lineOpacity = 0.08 * (1 - distance / 150);
+            ctx.strokeStyle = variant === 'cyber'
+              ? `rgba(59, 130, 246, ${lineOpacity})`
+              : `rgba(148, 163, 184, ${lineOpacity})`;
             ctx.lineWidth = 0.5;
             ctx.stroke();
           }
@@ -117,52 +128,27 @@ export function AnimatedBackground({ variant = 'default', showLottie = true }: A
       window.removeEventListener('mousemove', handleMouseMove);
       cancelAnimationFrame(animationRef.current);
     };
-  }, [variant]);
+  }, [variant, intensity]);
 
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
       {/* Canvas particles */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 opacity-60"
+        className="absolute inset-0"
         style={{ background: 'transparent' }}
       />
 
-      {/* Gradient orbs */}
-      <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full bg-primary/5 blur-[150px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full bg-secondary/10 blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-accent/5 blur-[200px] animate-pulse" style={{ animationDelay: '2s' }} />
-
-      {/* Grid overlay */}
-      <div className="absolute inset-0 bg-grid opacity-[0.02]" />
-
-      {/* Lottie animations */}
-      {showLottie && (
-        <>
-          <div className="absolute top-10 right-10 w-64 h-64 opacity-20">
-            <DotLottieReact
-              src="https://lottie.host/04bf57ab-2b8c-4088-8041-b7c14fea6aea/8sRGvO0CxH.lottie"
-              loop
-              autoplay
-            />
-          </div>
-          <div className="absolute bottom-10 left-10 w-48 h-48 opacity-15">
-            <DotLottieReact
-              src="https://lottie.host/519b609d-eb4b-4d6e-a5cc-190163f44419/OGhUSxI2BL.lottie"
-              loop
-              autoplay
-            />
-          </div>
-        </>
-      )}
-
-      {/* Scan lines effect */}
+      {/* Subtle gradient orb - single, understated */}
       <div 
-        className="absolute inset-0 pointer-events-none opacity-[0.03]"
+        className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full opacity-30"
         style={{
-          background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)',
+          background: 'radial-gradient(ellipse at center, hsl(var(--primary) / 0.08) 0%, transparent 70%)',
         }}
       />
+
+      {/* Subtle dot pattern overlay */}
+      <div className="absolute inset-0 bg-dots opacity-[0.015]" />
     </div>
   );
 }

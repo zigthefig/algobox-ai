@@ -97,15 +97,15 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-6 lg:p-8 max-w-7xl mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
+        className="mb-6"
       >
-        <h1 className="text-2xl font-bold lg:text-3xl">Welcome back! 👋</h1>
-        <p className="text-muted-foreground">Continue your learning journey</p>
+        <h1 className="text-2xl font-bold">Welcome back! 👋</h1>
+        <p className="text-sm text-muted-foreground">Continue your learning journey</p>
       </motion.div>
 
       {/* Stats Grid */}
@@ -113,31 +113,31 @@ export default function Dashboard() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
       >
         <StatCard
-          icon={<Target className="h-5 w-5" />}
+          icon={<Target className="h-4 w-4" />}
           label="Problems Solved"
           value={completedProblems.toString()}
           subtext={`of ${totalProblems} total`}
           color="primary"
         />
         <StatCard
-          icon={<Flame className="h-5 w-5" />}
-          label="Total Activity" // Changed from Streak as we calculate total days active
+          icon={<Flame className="h-4 w-4" />}
+          label="Total Activity"
           value={`${streak} days`}
           subtext="Keep grinding!"
           color="warning"
         />
         <StatCard
-          icon={<Clock className="h-5 w-5" />}
+          icon={<Clock className="h-4 w-4" />}
           label="Est. Hours"
-          value={(completedProblems * 0.5).toFixed(1)} // Rough estimate: 30 mins per problem
+          value={(completedProblems * 0.5).toFixed(1)}
           subtext="Based on solved count"
           color="success"
         />
         <StatCard
-          icon={<TrendingUp className="h-5 w-5" />}
+          icon={<TrendingUp className="h-4 w-4" />}
           label="Skill Level"
           value={skillLevel}
           subtext="Keep it up!"
@@ -145,46 +145,46 @@ export default function Dashboard() {
         />
       </motion.div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         {/* Main Content */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className="space-y-4 lg:col-span-2">
           {/* Continue Learning */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="rounded-xl border border-border bg-card p-6"
+            className="rounded-lg border border-border bg-card p-5"
           >
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Recent Activity</h2>
+              <h2 className="font-semibold">Recent Activity</h2>
               <Link to="/practice">
-                <Button variant="ghost" size="sm">
-                  View All <ArrowRight className="ml-1 h-4 w-4" />
+                <Button variant="ghost" size="sm" className="text-xs">
+                  View All <ArrowRight className="ml-1 h-3 w-3" />
                 </Button>
               </Link>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               {recentProblems.length > 0 ? recentProblems.map((problem: any) => (
                 <div
                   key={problem.id}
-                  className="flex items-center justify-between rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/50"
+                  className="flex items-center justify-between rounded-md border border-border bg-background p-3 transition-colors hover:border-primary/40"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className={`rounded-lg p-2 ${problem.status === "completed"
+                  <div className="flex items-center gap-3">
+                    <div className={`rounded-md p-1.5 ${problem.status === "completed"
                         ? "bg-success/10 text-success"
                         : "bg-warning/10 text-warning"
                       }`}>
                       {problem.status === "completed" ? (
-                        <CheckCircle2 className="h-5 w-5" />
+                        <CheckCircle2 className="h-4 w-4" />
                       ) : (
-                        <Play className="h-5 w-5" />
+                        <Play className="h-4 w-4" />
                       )}
                     </div>
                     <div>
-                      <h3 className="font-medium">{problem.title}</h3>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Badge variant={problem.difficulty as "beginner" | "intermediate" | "advanced"}>
+                      <h3 className="text-sm font-medium">{problem.title}</h3>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Badge variant={problem.difficulty as "beginner" | "intermediate" | "advanced"} className="text-[10px] px-1.5 py-0">
                           {problem.difficulty}
                         </Badge>
                         <span>•</span>
@@ -193,16 +193,16 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <Link to={`/practice?id=${problem.id}`}>
-                    <Button variant="outline" size="sm">
+                    <Button variant="ghost" size="sm" className="text-xs">
                       {problem.status === "completed" ? "Review" : "Continue"}
                     </Button>
                   </Link>
                 </div>
               )) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>No recent activity.</p>
+                <div className="text-center py-6 text-muted-foreground">
+                  <p className="text-sm">No recent activity.</p>
                   <Link to="/practice">
-                    <Button variant="link" className="mt-2">Start your first problem!</Button>
+                    <Button variant="link" size="sm" className="mt-1 text-xs">Start your first problem!</Button>
                   </Link>
                 </div>
               )}
@@ -214,32 +214,32 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="rounded-xl border border-border bg-card p-6"
+            className="rounded-lg border border-border bg-card p-5"
           >
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold">Topic Progress</h2>
+                <Sparkles className="h-4 w-4 text-primary" />
+                <h2 className="font-semibold">Topic Progress</h2>
               </div>
               <Link to="/roadmap">
-                <Button variant="ghost" size="sm">
-                  Full Roadmap <ArrowRight className="ml-1 h-4 w-4" />
+                <Button variant="ghost" size="sm" className="text-xs">
+                  Full Roadmap <ArrowRight className="ml-1 h-3 w-3" />
                 </Button>
               </Link>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               {categoryStats.map((topic) => (
-                <div key={topic.id} className="space-y-2">
-                  <div className="flex items-center justify-between">
+                <div key={topic.id} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
                     <span className="font-medium">{topic.name}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {topic.solved} / {topic.problems} solved
+                    <span className="text-xs text-muted-foreground">
+                      {topic.solved} / {topic.problems}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Progress value={topic.progress} className="flex-1" />
-                    <span className="text-sm font-medium text-primary">{topic.progress}%</span>
+                  <div className="flex items-center gap-2">
+                    <Progress value={topic.progress} className="flex-1 h-1.5" />
+                    <span className="text-xs font-medium text-primary w-8">{topic.progress}%</span>
                   </div>
                 </div>
               ))}
@@ -248,55 +248,52 @@ export default function Dashboard() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Quick Practice */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 to-background p-6"
+            className="rounded-lg border border-border bg-card p-5"
           >
-            <div className="absolute top-0 right-0 h-24 w-24 rounded-full bg-primary/20 blur-[40px]" />
-            <div className="relative">
-              <Code2 className="mb-4 h-10 w-10 text-primary" />
-              <h3 className="mb-2 text-lg font-semibold">Quick Practice</h3>
-              <p className="mb-4 text-sm text-muted-foreground">
-                AI will select the best problem for you based on your progress.
-              </p>
-              <Link to="/practice">
-                <Button className="w-full">
-                  Start Now
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
+            <Code2 className="mb-3 h-8 w-8 text-primary" />
+            <h3 className="mb-1.5 font-semibold">Quick Practice</h3>
+            <p className="mb-4 text-xs text-muted-foreground">
+              AI will select the best problem for you based on your progress.
+            </p>
+            <Link to="/practice">
+              <Button size="sm" className="w-full">
+                Start Now
+                <ArrowRight className="ml-2 h-3 w-3" />
+              </Button>
+            </Link>
           </motion.div>
 
-          {/* Milestones (Simplified for now since we don't have complex milestone logic yet) */}
+          {/* Milestones */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="rounded-xl border border-border bg-card p-6"
+            className="rounded-lg border border-border bg-card p-5"
           >
-            <h3 className="mb-4 text-lg font-semibold">Next Milestone</h3>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Solve 10 Problems</span>
+            <h3 className="mb-3 font-semibold">Next Milestone</h3>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">Solve 10 Problems</span>
                 </div>
-                <Progress value={Math.min((completedProblems / 10) * 100, 100)} />
-                <p className="text-xs text-muted-foreground">
-                  Award: Problem Solver Badge
+                <Progress value={Math.min((completedProblems / 10) * 100, 100)} className="h-1.5" />
+                <p className="text-[10px] text-muted-foreground">
+                  Problem Solver Badge
                 </p>
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Solve 50 Problems</span>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">Solve 50 Problems</span>
                 </div>
-                <Progress value={Math.min((completedProblems / 50) * 100, 100)} />
-                <p className="text-xs text-muted-foreground">
-                  Award: Master Coder Badge
+                <Progress value={Math.min((completedProblems / 50) * 100, 100)} className="h-1.5" />
+                <p className="text-[10px] text-muted-foreground">
+                  Master Coder Badge
                 </p>
               </div>
             </div>
@@ -324,13 +321,13 @@ function StatCard({ icon, label, value, subtext, color }: StatCardProps) {
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/30">
-      <div className={`mb-3 inline-flex rounded-lg p-2 ${colorClasses[color]}`}>
+    <div className="rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/30">
+      <div className={`mb-2 inline-flex rounded-md p-1.5 ${colorClasses[color]}`}>
         {icon}
       </div>
-      <div className="text-2xl font-bold">{value}</div>
-      <div className="text-sm text-muted-foreground">{label}</div>
-      <div className="mt-1 text-xs text-muted-foreground">{subtext}</div>
+      <div className="text-xl font-bold">{value}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-0.5 text-[10px] text-muted-foreground">{subtext}</div>
     </div>
   );
 }
