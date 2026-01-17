@@ -1,9 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   ArrowRight,
   Code2,
@@ -20,6 +22,9 @@ import { Link } from "react-router-dom";
 import { useProgress } from "@/hooks/useProgress";
 import { PROBLEMS, getCategories } from "@/lib/problems/problemLibrary";
 import { formatDistanceToNow } from "date-fns";
+
+// Register GSAP plugins
+gsap.registerPlugin(ScrollTrigger);
 
 export default function Dashboard() {
   const { progress, loading, getSolvedCount } = useProgress();

@@ -18,6 +18,23 @@ import NotFound from "./pages/NotFound";
 import Visualise from "./pages/Visualise";
 import CyberLab from "./pages/CyberLab";
 import { DashboardLayout } from "./components/DashboardLayout";
+import { useEffect } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+// Register GSAP plugins globally
+gsap.registerPlugin(ScrollTrigger);
+
+// Configure GSAP defaults
+gsap.config({
+  nullTargetWarn: false,
+});
+
+// Set default easing
+gsap.defaults({
+  ease: "power3.out",
+  duration: 0.5,
+});
 
 const queryClient = new QueryClient();
 
