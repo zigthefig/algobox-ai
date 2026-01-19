@@ -28,7 +28,7 @@ export const weeklyProgressReport = inngest.createFunction(
 export const generateUserWeeklyReport = inngest.createFunction(
     {
         id: "generate-user-weekly-report",
-        concurrency: { limit: 50 }, // High concurrency for parallel processing
+        concurrency: { limit: 5 }, // Match Inngest free tier limit
         rateLimit: { key: "event.data.userId", limit: 1, period: "1m" } // Idempotency
     },
     { event: "user.weekly.report" },

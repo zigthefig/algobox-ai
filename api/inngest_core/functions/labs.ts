@@ -38,7 +38,7 @@ export const userCompletedLab = inngest.createFunction(
 export const cyberPracticeSubmitted = inngest.createFunction(
     {
         id: "cyber-practice-submitted",
-        concurrency: { limit: 10 } // Prevent AI rate limits
+        concurrency: { limit: 5 } // Match Inngest free tier limit
     },
     { event: "cyber.practice.submitted" },
     async ({ event, step }) => {
@@ -93,8 +93,8 @@ export const sqlPracticeSubmitted = inngest.createFunction(
 export const aiMistakeAnalysis = inngest.createFunction(
     {
         id: "ai-mistake-analysis",
-        concurrency: { limit: 5 }, // Rate limit AI calls
-        throttle: { limit: 10, period: "1m" } // Safety
+        concurrency: { limit: 3 }, // Rate limit AI calls
+        throttle: { limit: 5, period: "1m" } // Stay within free tier
     },
     { event: "user.failed.lab" },
     async ({ event, step }) => {

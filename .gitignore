@@ -10,7 +10,6 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-# *.local - removed to allow .env.local access
 
 # Editor directories and files
 .vscode/*
@@ -22,15 +21,17 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment & Secrets
 .env
+.env.*
 .env.local
-env.local
-env.local
-env.local
-env.local
-env.local
-env.local
-env.local
+.env.production.local
+.env_val_*.txt
+*.secret
+*.key
+
+# IDE/Tool specific rules
 .clinerules/byterover-rules.md
 .kilocode/rules/byterover-rules.md
 .roo/rules/byterover-rules.md
@@ -39,4 +40,6 @@ env.local
 .kiro/steering/byterover-rules.md
 .qoder/rules/byterover-rules.md
 .augment/rules/byterover-rules.md
+
+# Vercel
 .vercel
