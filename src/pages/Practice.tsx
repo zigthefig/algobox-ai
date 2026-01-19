@@ -142,6 +142,23 @@ export default function Practice() {
 
         if (allPassed) {
           toast.success("All tests passed! Problem solved! 🎉");
+
+          // Emit Inngest Event via our Gateway
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            fetch('/api/events', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: "user.completed.lab",
+                data: {
+                  userId: user.id,
+                  labId: selectedProblem.id,
+                  score: 100
+                }
+              })
+            }).catch(console.error);
+          }
         }
       }
     } catch (err: any) {
@@ -161,17 +178,29 @@ export default function Practice() {
     setIsAiLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("debug-code", {
-        body: {
-          code,
-          language,
-          tests: selectedProblem.testCases.map(tc => ({ input: tc.input, expected: tc.expected })),
-          userQuestion: message,
-          problemContext: `Problem: ${selectedProblem.title}\n\nDescription: ${selectedProblem.description}\n\nExamples:\n${selectedProblem.examples.map((ex, i) => `Example ${i + 1}: Input: ${ex.input}, Output: ${ex.output}`).join('\n')}`,
-        },
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Use our new Go Serverless API for AI requests
+      const response = await fetch('/api/go/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.id || "anonymous",
+          prompt: message,
+          context: `Problem: ${selectedProblem.title}\n${selectedProblem.description}`
+        })
       });
-      if (error) throw error;
-      setChatMessages(prev => [...prev, { role: "assistant", content: data?.analysis || "I couldn't generate a response." }]);
+
+      if (!response.ok) throw new Error("AI Service Unavailable");
+
+      const data = await response.json();
+
+      // Since the Go API is async (Event-Driven), we acknowledge receipt
+      setChatMessages(prev => [...prev, {
+        role: "assistant",
+        content: `🤖 ${data.message || "I'm analyzing your request in the background."}\n\n(This triggers an Inngest workflow!)`
+      }]);
+
     } catch (err: any) {
       setChatMessages(prev => [...prev, { role: "assistant", content: `Error: ${err?.message || "Failed to connect"}` }]);
     } finally {

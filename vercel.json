@@ -1,5 +1,8 @@
 {
     "version": 2,
+    "env": {
+        "GO_VERSION": "1.21"
+    },
     "buildCommand": "npm run build",
     "outputDirectory": "dist",
     "framework": "vite",
@@ -16,10 +19,5 @@
             "source": "/(.*)",
             "destination": "/index.html"
         }
-    ],
-    "functions": {
-        "api/go/*.go": {
-            "runtime": "go1.x"
-        }
-    }
+    ]
 }

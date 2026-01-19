@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { ALL_CHALLENGES } from "./challengeRegistry";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,7 +13,10 @@ interface CyberPracticeProps {
     labId?: string;
 }
 
+import { useAuth } from "@/contexts/AuthContext";
+
 export function CyberPractice({ labId }: CyberPracticeProps) {
+    const { user } = useAuth();
     const [currentChallengeId, setCurrentChallengeId] = useState<string | null>(null);
 
     // Sync when prop changes
@@ -21,10 +26,9 @@ export function CyberPractice({ labId }: CyberPracticeProps) {
             if (match) {
                 setCurrentChallengeId(match.id);
             } else {
-                setCurrentChallengeId(null); // No challenge exists for this lab yet
+                setCurrentChallengeId(null);
             }
         } else {
-            // Default to first if no labId provided (standalone mode)
             setCurrentChallengeId(ALL_CHALLENGES[0].id);
         }
     }, [labId]);
@@ -45,10 +49,40 @@ export function CyberPractice({ labId }: CyberPracticeProps) {
         }
     }, [currentChallengeId]);
 
-    const runTests = () => {
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const runTests = async () => {
         if (!currentChallenge) return;
         const testResults = currentChallenge.verify(code);
         setResults(testResults);
+
+        const allPassed = testResults.every(r => r.passed);
+
+        if (allPassed && user) {
+            setIsSubmitting(true);
+            try {
+                const response = await fetch('/api/go/cyber', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: user.id,
+                        labId: currentChallenge.id,
+                        submissionId: `${currentChallenge.id}-${Date.now()}`,
+                        score: 100 // Full points for passing
+                    })
+                });
+
+                if (response.ok) {
+                    toast.success("Security Patch Deployed!", { description: "Analysis queued with AI security auditor." });
+                } else {
+                    console.error("Failed to record completion");
+                }
+            } catch (error) {
+                console.error("API Error", error);
+            } finally {
+                setIsSubmitting(false);
+            }
+        }
     };
 
     const resetCode = () => {
