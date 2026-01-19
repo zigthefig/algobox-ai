@@ -164,7 +164,7 @@ export const SidebarLink = ({
     link: Links;
     className?: string;
     props?: LinkProps; // Changed to partial to allow passing onClick/etc implicitly but kept separate
-} & React.ComponentProps<typeof Link>) => { // Extend with Link props
+} & Omit<React.ComponentProps<typeof Link>, "to">) => { // Extend with Link props but omit 'to' as it comes from link.href
     const { open, animate } = useSidebar();
     return (
         <Link

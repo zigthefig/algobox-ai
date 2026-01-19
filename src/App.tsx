@@ -17,7 +17,9 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Visualise from "./pages/Visualise";
 import CyberLab from "./pages/CyberLab";
+import BattleMode from "./pages/BattleMode";
 import { DashboardLayout } from "./components/DashboardLayout";
+import { AnalyticsListener } from "./components/AnalyticsListener";
 import { useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -45,6 +47,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <AnalyticsListener />
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
@@ -58,6 +61,7 @@ const App = () => (
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/notes" element={<Notes />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/battle" element={<BattleMode />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

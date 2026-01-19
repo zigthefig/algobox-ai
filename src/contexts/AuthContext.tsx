@@ -32,6 +32,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
+
+            if (session?.user) {
+                import("@/lib/analytics").then(({ analytics }) => {
+                    analytics.identify(session.user.id, {
+                        email: session.user.email,
+                        username: session.user.user_metadata?.username
+                    });
+                });
+            } else if (_event === 'SIGNED_OUT') {
+                import("@/lib/analytics").then(({ analytics }) => {
+                    analytics.reset();
+                });
+            }
         });
 
         return () => subscription.unsubscribe();

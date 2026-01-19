@@ -24,6 +24,7 @@ import {
 import { useProgress } from "@/hooks/useProgress";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useNotes } from "@/hooks/useNotes";
+import { analytics } from "@/lib/analytics";
 
 type Language = "python" | "javascript" | "cpp";
 type Difficulty = "beginner" | "intermediate" | "advanced";
@@ -86,6 +87,12 @@ export default function Practice() {
     setTestResults(problem.testCases.map(tc => ({ ...tc, passed: null })));
     setVisualizationData(null);
     setChatMessages([]);
+
+    analytics.track("lab_started", {
+      labId: problem.id,
+      labTitle: problem.title,
+      difficulty: problem.difficulty
+    });
   };
 
   const goBack = () => {
@@ -142,6 +149,12 @@ export default function Practice() {
 
         if (allPassed) {
           toast.success("All tests passed! Problem solved! 🎉");
+
+          analytics.track("lab_completed", {
+            labId: selectedProblem.id,
+            labTitle: selectedProblem.title,
+            attempts: testResults.length
+          });
 
           // Emit Inngest Event via our Gateway
           const { data: { user } } = await supabase.auth.getUser();
