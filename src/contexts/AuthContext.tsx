@@ -28,18 +28,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
 
             if (session?.user) {
+                // Analytics
                 import("@/lib/analytics").then(({ analytics }) => {
                     analytics.identify(session.user.id, {
                         email: session.user.email,
                         username: session.user.user_metadata?.username
                     });
                 });
+
+                // Check if this is a new user (created within the last 30 seconds)
+                // This handles OAuth signups where signUp() isn't called
+                const createdAt = new Date(session.user.created_at);
+                const now = new Date();
+                const isNewUser = (now.getTime() - createdAt.getTime()) < 30000; // 30 seconds
+
+                if (isNewUser && _event === 'SIGNED_IN') {
+                    try {
+                        const { inngestClient } = await import("@/lib/inngest/client");
+                        await inngestClient.send({
+                            name: "user.signup",
+                            data: {
+                                userId: session.user.id,
+                                email: session.user.email || '',
+                                name: session.user.user_metadata?.full_name ||
+                                    session.user.user_metadata?.username ||
+                                    session.user.email?.split('@')[0] || 'User',
+                            },
+                        });
+                        console.log("Welcome email triggered for new user:", session.user.id);
+                    } catch (e) {
+                        console.error("Failed to trigger welcome email:", e);
+                    }
+                }
             } else if (_event === 'SIGNED_OUT') {
                 import("@/lib/analytics").then(({ analytics }) => {
                     analytics.reset();
