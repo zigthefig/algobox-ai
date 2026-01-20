@@ -1,5 +1,15 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { inngest } from './inngest_core/client.js';
+import type { IncomingMessage, ServerResponse } from 'http';
+
+interface VercelRequest extends IncomingMessage {
+    body: { name?: string; data?: Record<string, unknown> };
+    method?: string;
+}
+
+interface VercelResponse extends ServerResponse {
+    status: (code: number) => VercelResponse;
+    json: (data: unknown) => void;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
@@ -20,7 +30,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(403).json({ error: 'Event not allowed' });
         }
 
-        await inngest.send({ name, data });
+        // Type assertion needed for dynamic event names
+        await inngest.send({ name, data } as Parameters<typeof inngest.send>[0]);
 
         return res.status(200).json({ success: true, event: name });
     } catch (error) {
