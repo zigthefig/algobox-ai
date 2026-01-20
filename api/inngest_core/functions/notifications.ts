@@ -20,7 +20,7 @@ export const emailNotification = inngest.createFunction(
 
             // Send real email via Resend
             const { data, error } = await resend.emails.send({
-                from: 'Algobox <noreply@algobox.ai>', // Update with your verified domain
+                from: 'Algobox <onboarding@resend.dev>', // Update with your verified domain
                 to: to,
                 subject: subject,
                 html: `

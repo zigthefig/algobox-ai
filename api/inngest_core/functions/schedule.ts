@@ -95,7 +95,7 @@ export const generateUserWeeklyReport = inngest.createFunction(
             }
 
             await resend.emails.send({
-                from: 'Algobox <reports@algobox.ai>',
+                from: 'Algobox <onboarding@resend.dev>',
                 to: userEmail,
                 subject: `📊 Your Weekly Algobox Report - ${weeklyStats.solved} problems solved!`,
                 html: `

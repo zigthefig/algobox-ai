@@ -25,7 +25,7 @@ export const welcomeEmail = inngest.createFunction(
             }
 
             const { data, error } = await resend.emails.send({
-                from: 'Algobox <welcome@algobox.ai>',
+                from: 'Algobox <onboarding@resend.dev>',
                 to: email,
                 subject: '🚀 Welcome to Algobox - Your Algorithm Journey Starts Now!',
                 html: `
@@ -169,7 +169,7 @@ export const sendStreakReminderEmail = inngest.createFunction(
             }
 
             await resend.emails.send({
-                from: 'Algobox <reminders@algobox.ai>',
+                from: 'Algobox <onboarding@resend.dev>',
                 to: userEmail,
                 subject: "🔥 Don't break your streak! One problem keeps you going",
                 html: `
