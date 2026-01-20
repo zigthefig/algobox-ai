@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize clients
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.VITE_RESEND_API_KEY);
 const supabase = createClient(
     process.env.VITE_SUPABASE_URL || '',
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || ''
@@ -19,8 +19,11 @@ export const welcomeEmail = inngest.createFunction(
         const { email, name, userId } = event.data;
 
         await step.run("send-welcome-email", async () => {
-            if (!process.env.RESEND_API_KEY) {
-                console.log(`[Mock Welcome Email] To: ${email}`);
+            const hasKey = !!process.env.VITE_RESEND_API_KEY;
+            console.log(`[Welcome Email Check] Has API Key: ${hasKey}, keys: ${Object.keys(process.env).filter(k => k.includes('RESEND'))}`);
+
+            if (!process.env.VITE_RESEND_API_KEY) {
+                console.log(`[Mock Welcome Email - Missing Key] To: ${email}`);
                 return { messageId: `mock_welcome_${Date.now()}` };
             }
 
@@ -163,7 +166,7 @@ export const sendStreakReminderEmail = inngest.createFunction(
         if (!userEmail) return { skipped: true, reason: "No email found" };
 
         await step.run("send-streak-email", async () => {
-            if (!process.env.RESEND_API_KEY) {
+            if (!process.env.VITE_RESEND_API_KEY) {
                 console.log(`[Mock Streak Reminder] To: ${userEmail}`);
                 return;
             }

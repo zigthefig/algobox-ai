@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize clients
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.VITE_RESEND_API_KEY);
 const supabase = createClient(
     process.env.VITE_SUPABASE_URL || '',
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || ''
@@ -31,12 +31,16 @@ export const emailNotification = inngest.createFunction(
         }
 
         if (!to) {
+            console.log("Skipping email: Missing 'to' field");
             return { skipped: true, reason: "Missing 'to' field" };
         }
 
+        to = to.trim();
+        console.log(`Sending email to: '${to}' (Subject: ${subject})`);
+
         const result = await step.run("send-email-via-resend", async () => {
             // Check if API key is configured
-            if (!process.env.RESEND_API_KEY) {
+            if (!process.env.VITE_RESEND_API_KEY) {
                 console.log(`[Mock Email] To: ${to}, Subject: ${subject}`);
                 return { messageId: `mock_${Date.now()}` };
             }
