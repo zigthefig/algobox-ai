@@ -54,7 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
                 if (isNewUser && _event === 'SIGNED_IN' && !alreadySent) {
                     try {
-                        console.log("[Auth] New user detected, sending welcome email...");
                         const { inngestClient } = await import("@/lib/inngest/client");
                         await inngestClient.send({
                             name: "user.signup",
@@ -68,9 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         });
                         // Mark as sent to prevent duplicate emails
                         localStorage.setItem(welcomeEmailSentKey, 'true');
-                        console.log("[Auth] Welcome email triggered for new user:", session.user.id);
                     } catch (e) {
-                        console.error("[Auth] Failed to trigger welcome email:", e);
+                        // Silently fail - email is not critical
                     }
                 }
             } else if (_event === 'SIGNED_OUT') {

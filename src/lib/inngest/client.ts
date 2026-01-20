@@ -17,12 +17,14 @@ class FrontendInngestClient {
                 body: JSON.stringify(event),
             });
 
+            const result = await response.json();
+
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to send event');
+                console.error('[Inngest] API error:', result);
+                throw new Error(result.error || 'Failed to send event');
             }
 
-            console.log(`[Inngest] Event sent: ${event.name}`);
+            console.log(`[Inngest] Event sent: ${event.name}`, result);
         } catch (error) {
             console.error('[Inngest] Failed to send event:', error);
             throw error;
