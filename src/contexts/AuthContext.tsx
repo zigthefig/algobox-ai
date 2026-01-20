@@ -42,14 +42,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     });
                 });
 
-                // Check if this is a new user (created within the last 30 seconds)
+                // Check if this is a new user (created within the last 60 seconds)
                 // This handles OAuth signups where signUp() isn't called
                 const createdAt = new Date(session.user.created_at);
                 const now = new Date();
-                const isNewUser = (now.getTime() - createdAt.getTime()) < 30000; // 30 seconds
+                const isNewUser = (now.getTime() - createdAt.getTime()) < 60000; // 60 seconds
 
-                if (isNewUser && _event === 'SIGNED_IN') {
+                // Check if we've already sent a welcome email for this user (localStorage)
+                const welcomeEmailSentKey = `welcome_email_sent_${session.user.id}`;
+                const alreadySent = localStorage.getItem(welcomeEmailSentKey);
+
+                if (isNewUser && _event === 'SIGNED_IN' && !alreadySent) {
                     try {
+                        console.log("[Auth] New user detected, sending welcome email...");
                         const { inngestClient } = await import("@/lib/inngest/client");
                         await inngestClient.send({
                             name: "user.signup",
@@ -61,9 +66,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                                     session.user.email?.split('@')[0] || 'User',
                             },
                         });
-                        console.log("Welcome email triggered for new user:", session.user.id);
+                        // Mark as sent to prevent duplicate emails
+                        localStorage.setItem(welcomeEmailSentKey, 'true');
+                        console.log("[Auth] Welcome email triggered for new user:", session.user.id);
                     } catch (e) {
-                        console.error("Failed to trigger welcome email:", e);
+                        console.error("[Auth] Failed to trigger welcome email:", e);
                     }
                 }
             } else if (_event === 'SIGNED_OUT') {
