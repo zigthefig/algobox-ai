@@ -1,15 +1,38 @@
 import { inngest } from "../client.js";
 import { Resend } from 'resend';
+import { createClient } from '@supabase/supabase-js';
 
-// Initialize Resend client
+// Initialize clients
 const resend = new Resend(process.env.RESEND_API_KEY);
+const supabase = createClient(
+    process.env.VITE_SUPABASE_URL || '',
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || ''
+);
 
 // Centralized Notification Handler
 export const emailNotification = inngest.createFunction(
     { id: "send-email-notification" },
     { event: "app/send.email" },
     async ({ event, step }) => {
-        const { to, subject, template, vars } = event.data;
+        let { to, subject, template, vars } = event.data;
+
+        // Step 1: Resolve 'to' if it's a User ID (UUID)
+        if (to && !to.includes('@')) {
+            const resolvedEmail = await step.run("resolve-user-email", async () => {
+                const { data } = await supabase.auth.admin.getUserById(to);
+                return data?.user?.email;
+            });
+
+            if (resolvedEmail) {
+                to = resolvedEmail;
+            } else {
+                return { skipped: true, reason: `Could not resolve email for user ID: ${to}` };
+            }
+        }
+
+        if (!to) {
+            return { skipped: true, reason: "Missing 'to' field" };
+        }
 
         const result = await step.run("send-email-via-resend", async () => {
             // Check if API key is configured
