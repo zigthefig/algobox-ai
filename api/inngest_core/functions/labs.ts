@@ -1,4 +1,15 @@
 import { inngest } from "../client.js";
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const getSupabase = () => {
+    const url = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    if (!url || !key) return null;
+    return createClient(url, key);
+};
+
+const supabase = getSupabase();
 
 // 1. Handle Successful Lab Completion
 export const userCompletedLab = inngest.createFunction(
@@ -7,13 +18,21 @@ export const userCompletedLab = inngest.createFunction(
     async ({ event, step }) => {
         const { userId, labId, score, labType } = event.data;
 
-        // Step 1: Calculate XP & Streak (Mocked DB call)
+        // Step 1: Fetch current user stats from Supabase
         const stats = await step.run("calculate-stats", async () => {
-            // In real app: db.users.update(...)
+            if (!supabase) {
+                return { xpAttempt: score * 10, totalScore: 0, error: "No DB" };
+            }
+
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('score')
+                .eq('id', userId)
+                .single();
+
             return {
                 xpAttempt: score * 10,
-                newStreak: 5, // Mocked
-                totalLabs: 42,
+                totalScore: profile?.score || 0,
             };
         });
 

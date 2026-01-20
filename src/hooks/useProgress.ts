@@ -138,9 +138,24 @@ export function useProgress() {
             });
 
             if (error) throw error;
+
+            // 3. Emit Inngest event when problem is newly solved
+            const wasPreviouslySolved = existingProgress?.status === "solved";
+            if (updates.status === "solved" && !wasPreviouslySolved) {
+                import("@/lib/inngest/client").then(({ inngestClient }) => {
+                    inngestClient.send({
+                        name: "user.completed.lab",
+                        data: {
+                            userId: user.id,
+                            labId: problemId,
+                            score: 100, // Base score for solving
+                            labType: "algo"
+                        }
+                    }).catch(() => { }); // Non-blocking, don't fail progress tracking
+                });
+            }
         } catch (err) {
             console.error("Error saving progress to Supabase:", err);
-            // Optionally revert state or show toast
         }
     };
 

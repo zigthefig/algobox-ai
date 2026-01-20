@@ -8,26 +8,18 @@ interface InngestEvent {
 
 class FrontendInngestClient {
     async send(event: InngestEvent): Promise<void> {
-        try {
-            const response = await fetch('/api/inngest-event', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(event),
-            });
+        const response = await fetch('/api/inngest-event', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(event),
+        });
 
-            const result = await response.json();
+        const result = await response.json();
 
-            if (!response.ok) {
-                console.error('[Inngest] API error:', result);
-                throw new Error(result.error || 'Failed to send event');
-            }
-
-            console.log(`[Inngest] Event sent: ${event.name}`, result);
-        } catch (error) {
-            console.error('[Inngest] Failed to send event:', error);
-            throw error;
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to send event');
         }
     }
 }

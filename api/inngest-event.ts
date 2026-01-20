@@ -32,16 +32,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Check if event key is configured
         const hasEventKey = !!process.env.INNGEST_EVENT_KEY;
-        console.log(`[inngest-event] Sending event: ${name}, hasEventKey: ${hasEventKey}`);
 
         // Type assertion needed for dynamic event names
         const result = await inngest.send({ name, data } as Parameters<typeof inngest.send>[0]);
 
-        console.log(`[inngest-event] Send result:`, JSON.stringify(result));
-
         return res.status(200).json({ success: true, event: name, result, hasEventKey });
     } catch (error) {
-        console.error('[inngest-event] Error:', error);
         const message = error instanceof Error ? error.message : 'Unknown error';
         return res.status(500).json({ error: 'Failed to send event', message });
     }
