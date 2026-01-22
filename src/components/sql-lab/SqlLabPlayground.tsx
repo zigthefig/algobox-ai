@@ -118,7 +118,7 @@ export function SqlLabPlayground() {
     };
 
     return (
-        <div className="h-[calc(100vh-200px)] flex gap-4">
+        <div className="h-full min-h-[500px] flex gap-4">
             {/* Left Panel: Database Explorer + Query Editor */}
             <div className="w-72 flex flex-col gap-4">
                 {/* Database Explorer */}
