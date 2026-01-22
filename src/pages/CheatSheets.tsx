@@ -13,6 +13,7 @@ import {
     ArrowRight,
     ChevronRight,
     BookOpen,
+    Play,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -325,6 +326,30 @@ interface CheatSheetCardProps {
     delay?: number;
 }
 
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import { PatternVisualizer } from "@/components/visualisation/PatternVisualizer";
+
+// ... (existing imports remain, handled by tool context matching)
+
+const SUPPORTED_VISUALIZATIONS = [
+    "two-pointers-opposite",
+    "binary-search-basic",
+    "binary-search-boundary",
+    "variable-sliding-window",
+    "fast-slow-pointers",
+    "bfs-tree",
+    "dfs-tree",
+    "monotonic-stack",
+    "stack-parentheses"
+];
+
 function CheatSheetCard({ item, delay = 0 }: CheatSheetCardProps) {
     return (
         <motion.div
@@ -345,17 +370,41 @@ function CheatSheetCard({ item, delay = 0 }: CheatSheetCardProps) {
                 <div className="flex-1 p-4">
                     <div className="flex flex-wrap gap-2">
                         {item.algorithms.map((algo, idx) => (
-                            <div key={idx}>
+                            <div key={idx} className="flex items-center">
                                 {algo.patternId ? (
-                                    <Link to={`/patterns/${algo.patternId}`}>
-                                        <div className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/20 hover:border-primary/40 hover:bg-primary/10 transition-all">
-                                            <span className="text-sm font-medium">{algo.name}</span>
-                                            <Badge variant="outline" className="text-[10px] h-5">
-                                                {algo.complexity}
-                                            </Badge>
-                                            <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        </div>
-                                    </Link>
+                                    <div className="flex items-center gap-1">
+                                        <Link to={`/patterns/${algo.patternId}`}>
+                                            <div className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/20 hover:border-primary/40 hover:bg-primary/10 transition-all">
+                                                <span className="text-sm font-medium">{algo.name}</span>
+                                                <Badge variant="outline" className="text-[10px] h-5">
+                                                    {algo.complexity}
+                                                </Badge>
+                                                <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            </div>
+                                        </Link>
+
+                                        {/* Visualization Trigger */}
+                                        {SUPPORTED_VISUALIZATIONS.includes(algo.patternId) && (
+                                            <Dialog>
+                                                <DialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary rounded-full">
+                                                        <Play className="h-3 w-3" />
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <DialogContent className="sm:max-w-2xl">
+                                                    <DialogHeader>
+                                                        <DialogTitle>{algo.name} Visualization</DialogTitle>
+                                                        <DialogDescription>
+                                                            Interactive walkthrough of the algorithm logic.
+                                                        </DialogDescription>
+                                                    </DialogHeader>
+                                                    <div className="mt-4">
+                                                        <PatternVisualizer patternId={algo.patternId} />
+                                                    </div>
+                                                </DialogContent>
+                                            </Dialog>
+                                        )}
+                                    </div>
                                 ) : (
                                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border">
                                         <span className="text-sm">{algo.name}</span>

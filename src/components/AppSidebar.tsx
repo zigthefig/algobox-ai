@@ -48,9 +48,9 @@ const navSections: NavSection[] = [
   {
     title: "Learn",
     items: [
-      { label: "Patterns", href: "/patterns", icon: <BookOpen className="h-5 w-5 shrink-0" />, badge: "NEW" },
-      { label: "Algorithm Picker", href: "/algorithm-picker", icon: <Target className="h-5 w-5 shrink-0" />, badge: "NEW" },
-      { label: "Cheat Sheets", href: "/cheat-sheets", icon: <Zap className="h-5 w-5 shrink-0" />, badge: "NEW" },
+      { label: "Patterns", href: "/patterns", icon: <BookOpen className="h-5 w-5 shrink-0" /> },
+      { label: "Algorithm Picker", href: "/algorithm-picker", icon: <Target className="h-5 w-5 shrink-0" /> },
+      { label: "Cheat Sheets", href: "/cheat-sheets", icon: <Zap className="h-5 w-5 shrink-0" /> },
       { label: "Visualize", href: "/visualise", icon: <PlayCircle className="h-5 w-5 shrink-0" /> },
     ],
   },
@@ -94,7 +94,8 @@ export function AppSidebar() {
   return (
     <Sidebar open={open} setOpen={setOpen}>
       <SidebarBody className="justify-between gap-6 bg-sidebar border-r border-sidebar-border">
-        <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+        {/* Scrollable content with custom thin scrollbar */}
+        <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-sidebar-accent [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-sidebar-border">
           {open ? <Logo /> : <LogoIcon />}
 
           <div className="mt-6 flex flex-col gap-4">

@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { PatternVisualizer } from "@/components/visualisation/PatternVisualizer";
 
 export default function PatternDetail() {
     const { patternId } = useParams<{ patternId: string }>();
@@ -199,6 +200,8 @@ export default function PatternDetail() {
                         </ul>
                     </motion.section>
 
+
+
                     {/* Key Indicators */}
                     <motion.section
                         initial={{ opacity: 0, y: 10 }}
@@ -217,6 +220,17 @@ export default function PatternDetail() {
                             ))}
                         </div>
                     </motion.section>
+
+                    {/* Algorithm Visualization */}
+                    {["two-pointers-opposite", "binary-search-basic", "binary-search-boundary", "variable-sliding-window", "fast-slow-pointers", "bfs-tree", "dfs-tree", "monotonic-stack", "stack-parentheses"].includes(pattern.id) && (
+                        <motion.section
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.45 }}
+                        >
+                            <PatternVisualizer patternId={pattern.id} />
+                        </motion.section>
+                    )}
 
                     {/* Template Code */}
                     <motion.section

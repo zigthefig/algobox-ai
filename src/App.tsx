@@ -26,6 +26,7 @@ import CheatSheets from "./pages/CheatSheets";
 import { DashboardLayout } from "./components/DashboardLayout";
 import { AnalyticsListener } from "./components/AnalyticsListener";
 import { FloatingActionButtons } from "./components/FloatingActionButtons";
+import { GlobalLoader } from "./components/GlobalLoader";
 import { useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -54,12 +55,13 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AnalyticsListener />
+          <GlobalLoader />
           <FloatingActionButtons />
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+            <Route element={<DashboardLayout />}>
               {/* Overview */}
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/roadmap" element={<Roadmap />} />

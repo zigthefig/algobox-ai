@@ -21,6 +21,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import GeneratingLoader from "@/components/ui/GeneratingLoader";
 import { useProgress } from "@/hooks/useProgress";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useNotes } from "@/hooks/useNotes";
@@ -249,7 +250,7 @@ export default function Practice() {
             />
           </div>
           <Button variant="ghost" size="sm" className="text-muted-foreground text-xs sm:text-sm px-2 sm:px-3">
-            <Filter className="h-3 w-3 sm:h-4 sm:w-4 mr-1" /> 
+            <Filter className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
             <span className="hidden sm:inline">Filter</span>
           </Button>
         </div>
@@ -303,11 +304,11 @@ export default function Practice() {
         </button>
         <div className="flex-1" />
         <Button variant="outline" size="sm" onClick={() => handleRun(true)} disabled={isRunning} className="h-7 sm:h-8 text-[10px] sm:text-xs px-2 sm:px-3">
-          <Eye className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" /> 
+          <Eye className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
           <span className="hidden sm:inline">Visualize</span>
         </Button>
         <Button variant="ghost" size="sm" onClick={() => handleRun(false)} disabled={isRunning} className="h-7 sm:h-8 text-[10px] sm:text-xs px-2 sm:px-3">
-          <Play className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" /> 
+          <Play className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
           <span className="hidden sm:inline">Run</span>
         </Button>
         <Button size="sm" onClick={() => handleRun(false)} disabled={isRunning} className="h-7 sm:h-8 text-[10px] sm:text-xs px-2 sm:px-3 bg-emerald-600 hover:bg-emerald-700">
@@ -598,12 +599,12 @@ export default function Practice() {
                   ))
                 )}
                 {isAiLoading && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-center">
                     <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
-                      <Loader2 className="h-3.5 w-3.5 text-amber-500 animate-spin" />
+                      <Bot className="h-3.5 w-3.5 text-amber-500" />
                     </div>
-                    <div className="bg-muted rounded-lg px-3 py-2">
-                      <p className="text-sm text-muted-foreground">Thinking...</p>
+                    <div className="bg-muted/50 rounded-lg px-4 py-2 min-w-[150px] flex justify-center">
+                      <GeneratingLoader className="scale-[0.6] origin-center m-0 h-12" />
                     </div>
                   </div>
                 )}

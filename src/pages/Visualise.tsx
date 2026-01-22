@@ -34,6 +34,7 @@ import { SqlLabPlayground } from "@/components/sql-lab/SqlLabPlayground";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import GeneratingLoader from "@/components/ui/GeneratingLoader";
 
 type Algorithm =
   | "bubble-sort"
@@ -1077,7 +1078,12 @@ export default function Visualise() {
                           )}
                         </Button>
                       </div>
-                      {aiExplanation && (
+                      {aiLoading && (
+                        <div className="flex justify-center py-4 bg-muted/30 rounded-md">
+                          <GeneratingLoader className="scale-[0.7] h-12 m-0" />
+                        </div>
+                      )}
+                      {aiExplanation && !aiLoading && (
                         <div className="text-sm text-muted-foreground bg-background/50 rounded-md p-3">
                           {aiExplanation}
                         </div>
