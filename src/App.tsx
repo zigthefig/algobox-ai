@@ -23,6 +23,8 @@ import Patterns from "./pages/Patterns";
 import PatternDetail from "./pages/PatternDetail";
 import AlgorithmPicker from "./pages/AlgorithmPicker";
 import CheatSheets from "./pages/CheatSheets";
+import Community from "./pages/Community";
+import QuestionDetail from "./pages/QuestionDetail";
 import { DashboardLayout } from "./components/DashboardLayout";
 import { AnalyticsListener } from "./components/AnalyticsListener";
 import { FloatingActionButtons } from "./components/FloatingActionButtons";
@@ -61,7 +63,11 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route element={<DashboardLayout />}>
+            <Route element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
               {/* Overview */}
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/roadmap" element={<Roadmap />} />
@@ -79,6 +85,8 @@ const App = () => (
               <Route path="/leaderboard" element={<Leaderboard />} />
               {/* Track */}
               <Route path="/analytics" element={<Analytics />} />
+              <Route path="/community" element={<Community />} />
+              <Route path="/community/:questionId" element={<QuestionDetail />} />
               <Route path="/notes" element={<Notes />} />
               <Route path="/settings" element={<Settings />} />
             </Route>

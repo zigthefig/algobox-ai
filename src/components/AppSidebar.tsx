@@ -23,6 +23,7 @@ import {
   GraduationCap,
   Gamepad2,
   LineChart,
+  Users,
 } from "lucide-react";
 
 interface NavItem {
@@ -73,6 +74,12 @@ const navSections: NavSection[] = [
     items: [
       { label: "Analytics", href: "/analytics", icon: <LineChart className="h-5 w-5 shrink-0" /> },
       { label: "Notes", href: "/notes", icon: <FileText className="h-5 w-5 shrink-0" /> },
+    ],
+  },
+  {
+    title: "Connect",
+    items: [
+      { label: "Community", href: "/community", icon: <Users className="h-5 w-5 shrink-0" /> },
     ],
   },
 ];
